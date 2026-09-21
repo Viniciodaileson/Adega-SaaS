@@ -4,53 +4,115 @@ public class CadastroBebidas {
 
     public static void main(String[] args) {
 
-        Bebida heineken = new Bebida("Heineken", 5.00, 20);
-
         Scanner sc = new Scanner(System.in);
 
-        System.out.println("Digite o nome da bebida: ");
-        String nome = sc.nextLine();
+        Bebida bebida = null;
 
-        System.out.println("Digite o preço da bebida: ");
-        double preco = sc.nextDouble();
+        int opcao;
 
-        System.out.println("Qual a quantidade de bebidas deseja guardar? ");
-        int quantEstoque = sc.nextInt();
+        do {
 
-        System.out.println("Bebida cadastrada : " + nome + " -- R$ " + preco);
-        System.out.println("A quantidade em estoque: " + quantEstoque);
+            System.out.println("\n=============== ADEGA ===============");
+            System.out.println("1 - Cadastrar bebida");
+            System.out.println("2 - Consultar estoque");
+            System.out.println("3 - Repor estoque");
+            System.out.println("4 - Realizar venda");
+            System.out.println("0 - Sair");
+            System.out.println("======================================");
+            System.out.print("Digite a opção desejada: ");
 
-        if (quantEstoque > 0) {
-            System.out.println("Produto disponível para venda");
-        } else {
-            System.out.println("Produto não está disponível!");
-        }
+            opcao = sc.nextInt();
 
-        if (heineken.quantEstoque == 0) {
-            System.out.println("Produto esgotado!");
+            switch (opcao) {
 
-        } else if (heineken.quantEstoque > 0) {
+                case 1:
 
-            System.out.println("Deseja comprar uma " + nome + " ? ");
+                    System.out.println("\n--- CADASTRO DE BEBIDA ---");
 
-            String desejaComprar = sc.next();
+                    sc.nextLine();
 
-            if (heineken.quantEstoque > 0 &&
-                    desejaComprar.equalsIgnoreCase("sim")) {
+                    System.out.print("Digite o nome da bebida: ");
+                    String nome = sc.nextLine();
 
-                System.out.println("Bebida comprada com sucesso!");
+                    System.out.print("Digite o preço da bebida: ");
+                    double preco = sc.nextDouble();
 
-                heineken.vender();
+                    System.out.print("Digite a quantidade em estoque: ");
+                    int quantEstoque = sc.nextInt();
 
-                System.out.print(
-                        "Quantidade em estoque é: " + heineken.quantEstoque);
+                    bebida = new Bebida(nome, preco, quantEstoque);
 
-            } else {
-                System.out.print("Cliente não deseja comprar");
+                    System.out.println("Bebida cadastrada com sucesso!");
+
+                    break;
+
+                case 2:
+
+                    if (bebida == null) {
+                        System.out.println("Nenhuma bebida cadastrada.");
+                        break;
+                    }
+
+                    System.out.println("\n--- ESTOQUE ---");
+                    System.out.println("Bebida: " + bebida.nome);
+                    System.out.println("Preço: R$ " + bebida.preco);
+                    System.out.println("Quantidade: " + bebida.quantEstoque);
+
+                    break;
+
+                case 3:
+
+                    if (bebida == null) {
+                        System.out.println("Nenhuma bebida cadastrada.");
+                        break;
+                    }
+
+                    System.out.println("\n--- REPOSIÇÃO ---");
+                    System.out.print("Digite a quantidade a ser reposta: ");
+
+                    int quantidadeReposicao = sc.nextInt();
+
+                    bebida.reporEstoque(quantidadeReposicao);
+
+                    System.out.println(
+                        "Estoque atualizado: " + bebida.quantEstoque
+                    );
+
+                    break;
+
+                case 4:
+
+                    if (bebida == null) {
+                        System.out.println("Nenhuma bebida cadastrada.");
+                        break;
+                    }
+
+                    System.out.println("\n--- VENDA ---");
+                    System.out.print("Quantas unidades deseja comprar? ");
+
+                    int quantidadeVenda = sc.nextInt();
+
+                    bebida.vender(quantidadeVenda);
+
+                    System.out.println(
+                        "Estoque atual: " + bebida.quantEstoque
+                    );
+
+                    break;
+
+                case 0:
+
+                    System.out.println("Saindo do sistema...");
+
+                    break;
+
+                default:
+
+                    System.out.println("Opção inválida. Tente novamente.");
             }
-        }
+
+        } while (opcao != 0);
 
         sc.close();
-
-        }
     }
+}
