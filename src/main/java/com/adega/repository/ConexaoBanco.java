@@ -7,13 +7,14 @@ import java.sql.Statement;
 
 public final class ConexaoBanco {
 
-    private static final String URL = "jdbc:sqlite:adega.db";
+    private static final String URL_PADRAO = "jdbc:sqlite:adega.db";
 
     private ConexaoBanco() {
     }
 
     public static Connection abrir() throws SQLException {
-        return DriverManager.getConnection(URL);
+        String url = System.getProperty("adega.db.url", URL_PADRAO);
+        return DriverManager.getConnection(url);
     }
 
     public static void inicializar() throws SQLException {

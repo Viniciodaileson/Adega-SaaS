@@ -21,7 +21,7 @@ O objetivo é criar um sistema completo de gerenciamento para adegas, iniciando 
 - Git
 - GitHub
 
-## Funcionalidades (v1.3)
+## Funcionalidades (v1.4)
 
 - Cadastro de bebidas com `id`, nome, preço e quantidade em estoque
 - Consulta do estoque com valor total
@@ -32,6 +32,7 @@ O objetivo é criar um sistema completo de gerenciamento para adegas, iniciando 
 - Preço com `BigDecimal` (sem erro de arredondamento em dinheiro)
 - Dados salvos em SQLite: nada se perde ao fechar o programa
 - Código organizado em camadas: `model`, `repository`, `service` e `ui`
+- Testes automatizados do modelo e do service (20 testes)
 
 ## Como executar
 
@@ -48,6 +49,14 @@ Pré-requisitos: JDK 21 (`java -version`). O Maven vem pelo wrapper, não precis
 Na primeira execução o wrapper baixa o Maven e o driver do SQLite (precisa de internet).
 
 No VS Code, com a **Extension Pack for Java**, o projeto é reconhecido como Maven automaticamente.
+
+## Testes
+
+```powershell
+.\mvnw.cmd test
+```
+
+Os testes do service usam um banco SQLite separado (`target/adega-test.db`), que é limpo antes de cada teste.
 
 ## Estrutura
 
@@ -68,6 +77,9 @@ AdegaSaaS/
 │   │   └── BebidaService.java       # Orquestra repositório + regras
 │   └── ui/
 │       └── CadastroBebidas.java     # Menu de console
+├── src/test/java/com/adega/
+│   ├── model/BebidaTest.java
+│   └── service/BebidaServiceTest.java
 └── adega.db                         # Banco (gerado, não versionado)
 ```
 
@@ -101,9 +113,10 @@ Para começar do zero, apague `adega.db` e rode de novo.
 - [x] v1.1 — `BigDecimal`, `id` e modelo sem impressão
 - [x] v1.2 — Persistência com SQLite + JDBC
 - [x] v1.3 — Maven e separação em camadas
-- [ ] v1.4 — Testes automatizados com JUnit
+- [x] v1.4 — Testes automatizados com JUnit
 - [ ] v2.0 — API REST com Spring Boot
-- [ ] v2.1 — Front-end web consumindo a API
+- [ ] v2.1 — Login e senha com Spring Security + JWT
+- [ ] v2.2 — Front-end web com React
 
 ---
 
