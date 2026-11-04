@@ -3,10 +3,6 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-/**
- * Responsável por abrir a conexão com o SQLite e criar a tabela.
- * O driver (lib/sqlite-jdbc-*.jar) se registra sozinho via ServiceLoader.
- */
 public final class ConexaoBanco {
 
     private static final String URL = "jdbc:sqlite:adega.db";

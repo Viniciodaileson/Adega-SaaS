@@ -8,10 +8,6 @@ public class Bebida {
     private BigDecimal preco;
     private int quantEstoque;
 
-    /**
-     * id 0 significa "ainda não salvo no banco".
-     * Depois do INSERT, o repositório devolve a bebida com o id gerado.
-     */
     public Bebida(int id, String nome, BigDecimal preco, int quantEstoque) {
 
         if (id < 0) {
@@ -52,7 +48,6 @@ public class Bebida {
             throw new IllegalArgumentException("O preço deve ser maior que zero.");
         }
 
-        // Normaliza para duas casas decimais (ex: 25.9 -> 25.90)
         this.preco = preco.setScale(2, RoundingMode.HALF_UP);
     }
 
@@ -60,7 +55,6 @@ public class Bebida {
         return quantEstoque;
     }
 
-    // Privado de propósito: o estoque só muda por venda ou reposição.
     private void setQuantEstoque(int quantEstoque) {
 
         if (quantEstoque < 0) {

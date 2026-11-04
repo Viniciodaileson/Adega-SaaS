@@ -59,7 +59,6 @@ public class CadastroBebidas {
                 }
 
             } catch (IllegalStateException e) {
-                // Erros de banco de dados: a mensagem já vem pronta do repositório.
                 System.out.println(e.getMessage());
             }
 
@@ -95,7 +94,6 @@ public class CadastroBebidas {
 
         try {
 
-            // id 0 = ainda não salvo; o banco gera o id de verdade.
             Bebida bebida = new Bebida(0, nome, preco, quantEstoque);
 
             Bebida salva = repositorio.salvar(bebida);

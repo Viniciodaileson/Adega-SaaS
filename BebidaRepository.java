@@ -7,11 +7,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Acesso à tabela "bebidas".
- * Todas as consultas usam PreparedStatement: os valores entram como
- * parâmetros (?) e não são concatenados na string SQL.
- */
 public class BebidaRepository {
 
     public Bebida salvar(Bebida bebida) {
@@ -71,7 +66,6 @@ public class BebidaRepository {
 
     public Bebida buscarPorNome(String nome) {
 
-        // A coluna nome é COLLATE NOCASE, então o "=" já ignora maiúsculas/minúsculas.
         String sql = "SELECT id, nome, preco, quant_estoque FROM bebidas WHERE nome = ?";
 
         try (Connection conexao = ConexaoBanco.abrir();
