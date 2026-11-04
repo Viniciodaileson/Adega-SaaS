@@ -1,12 +1,18 @@
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Scanner;
 
 public class CadastroBebidas {
 
-    private static final Scanner SC = new Scanner(System.in);
-    private static final ArrayList<Bebida> BEBIDAS = new ArrayList<>();
+    private final Scanner sc = new Scanner(System.in);
+    private final ArrayList<Bebida> bebidas = new ArrayList<>();
+    private int proximoId = 1;
 
     public static void main(String[] args) {
+        new CadastroBebidas().executar();
+    }
+
+    private void executar() {
 
         int opcao;
 
@@ -44,10 +50,10 @@ public class CadastroBebidas {
 
         } while (opcao != 0);
 
-        SC.close();
+        sc.close();
     }
 
-    private static void exibirMenu() {
+    private void exibirMenu() {
 
         System.out.println("\n=============== ADEGA ===============");
         System.out.println("1 - Cadastrar bebida");
@@ -58,7 +64,7 @@ public class CadastroBebidas {
         System.out.println("======================================");
     }
 
-    private static void cadastrarBebida() {
+    private void cadastrarBebida() {
 
         System.out.println("\n--- CADASTRO DE BEBIDA ---");
 
@@ -69,52 +75,54 @@ public class CadastroBebidas {
             return;
         }
 
-        double preco = lerDecimal("Digite o preço da bebida: ");
+        BigDecimal preco = lerDecimal("Digite o preço da bebida: ");
         int quantEstoque = lerInteiro("Digite a quantidade em estoque: ");
 
         try {
 
-            Bebida bebida = new Bebida(nome, preco, quantEstoque);
+            Bebida bebida = new Bebida(proximoId, nome, preco, quantEstoque);
 
-            BEBIDAS.add(bebida);
+            bebidas.add(bebida);
+            proximoId++;
 
-            System.out.println("Bebida cadastrada com sucesso!");
+            System.out.println("Bebida cadastrada com sucesso! ID: " + bebida.getId());
 
         } catch (IllegalArgumentException e) {
             System.out.println("Não foi possível cadastrar: " + e.getMessage());
         }
     }
 
-    private static void consultarEstoque() {
+    private void consultarEstoque() {
 
         System.out.println("\n--- ESTOQUE ---");
 
-        if (BEBIDAS.isEmpty()) {
+        if (bebidas.isEmpty()) {
             System.out.println("Nenhuma bebida cadastrada.");
             return;
         }
 
-        double valorTotal = 0;
+        BigDecimal valorTotal = BigDecimal.ZERO;
 
-        for (Bebida bebida : BEBIDAS) {
+        for (Bebida bebida : bebidas) {
 
             System.out.println("----------------------------");
+            System.out.println("ID: " + bebida.getId());
             System.out.println("Bebida: " + bebida.getNome());
             System.out.printf("Preço: R$ %.2f%n", bebida.getPreco());
             System.out.println("Quantidade: " + bebida.getQuantEstoque());
 
-            valorTotal += bebida.valorEmEstoque();
+            valorTotal = valorTotal.add(bebida.valorEmEstoque());
         }
 
         System.out.println("----------------------------");
         System.out.printf("Valor total em estoque: R$ %.2f%n", valorTotal);
     }
 
-    private static void reporEstoque() {
+    private void reporEstoque() {
 
         System.out.println("\n--- REPOSIÇÃO ---");
 
-        if (BEBIDAS.isEmpty()) {
+        if (bebidas.isEmpty()) {
             System.out.println("Nenhuma bebida cadastrada.");
             return;
         }
@@ -130,16 +138,17 @@ public class CadastroBebidas {
 
         int quantidade = lerInteiro("Digite a quantidade a ser reposta: ");
 
-        bebida.reporEstoque(quantidade);
+        Resultado resultado = bebida.reporEstoque(quantidade);
 
+        System.out.println(resultado.mensagem());
         System.out.println("Estoque atual: " + bebida.getQuantEstoque());
     }
 
-    private static void realizarVenda() {
+    private void realizarVenda() {
 
         System.out.println("\n--- VENDA ---");
 
-        if (BEBIDAS.isEmpty()) {
+        if (bebidas.isEmpty()) {
             System.out.println("Nenhuma bebida cadastrada.");
             return;
         }
@@ -155,18 +164,23 @@ public class CadastroBebidas {
 
         int quantidade = lerInteiro("Quantas unidades deseja comprar? ");
 
-        boolean vendeu = bebida.vender(quantidade);
+        Resultado resultado = bebida.vender(quantidade);
 
-        if (vendeu) {
-            System.out.printf("Total da venda: R$ %.2f%n", quantidade * bebida.getPreco());
+        System.out.println(resultado.mensagem());
+
+        if (resultado.sucesso()) {
+
+            BigDecimal total = bebida.getPreco().multiply(BigDecimal.valueOf(quantidade));
+
+            System.out.printf("Total da venda: R$ %.2f%n", total);
         }
 
         System.out.println("Estoque atual: " + bebida.getQuantEstoque());
     }
 
-    private static Bebida buscarBebida(String nome) {
+    private Bebida buscarBebida(String nome) {
 
-        for (Bebida bebida : BEBIDAS) {
+        for (Bebida bebida : bebidas) {
 
             if (bebida.getNome().equalsIgnoreCase(nome)) {
                 return bebida;
@@ -176,14 +190,14 @@ public class CadastroBebidas {
         return null;
     }
 
-    private static String lerTexto(String mensagem) {
+    private String lerTexto(String mensagem) {
 
         System.out.print(mensagem);
 
-        return SC.nextLine().trim();
+        return sc.nextLine().trim();
     }
 
-    private static int lerInteiro(String mensagem) {
+    private int lerInteiro(String mensagem) {
 
         while (true) {
 
@@ -197,14 +211,14 @@ public class CadastroBebidas {
         }
     }
 
-    private static double lerDecimal(String mensagem) {
+    private BigDecimal lerDecimal(String mensagem) {
 
         while (true) {
 
             String entrada = lerTexto(mensagem).replace(",", ".");
 
             try {
-                return Double.parseDouble(entrada);
+                return new BigDecimal(entrada);
             } catch (NumberFormatException e) {
                 System.out.println("Valor inválido. Digite um número. Ex: 12,50");
             }

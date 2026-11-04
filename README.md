@@ -19,21 +19,22 @@ O objetivo é criar um sistema completo de gerenciamento para adegas, iniciando 
 - Git
 - GitHub
 
-## Funcionalidades (v1.0)
+## Funcionalidades (v1.1)
 
-- Cadastro de bebidas com nome, preço e quantidade em estoque
+- Cadastro de bebidas com `id`, nome, preço e quantidade em estoque
 - Consulta do estoque com valor total
 - Reposição de estoque
 - Venda com baixa automática no estoque
 - Validação de dados (nome, preço, quantidade e entradas inválidas)
 - Bloqueio de bebidas com nome duplicado
+- Preço com `BigDecimal` (sem erro de arredondamento em dinheiro)
 
 ## Como executar
 
 Pré-requisito: JDK 21 instalado (`java -version`).
 
 ```bash
-javac Bebida.java CadastroBebidas.java
+javac Bebida.java Resultado.java CadastroBebidas.java
 java CadastroBebidas
 ```
 
@@ -41,7 +42,8 @@ java CadastroBebidas
 
 ```
 AdegaSaaS/
-├── Bebida.java            # Modelo: dados e regras de estoque
+├── Bebida.java            # Modelo: dados, identidade e regras de estoque
+├── Resultado.java         # Retorno das operações (sucesso/falha + mensagem)
 ├── CadastroBebidas.java   # Interface de console (menu)
 ├── .gitignore
 └── README.md
@@ -52,8 +54,9 @@ AdegaSaaS/
 - [x] v0.1 — Cadastro e venda inicial
 - [x] v0.2 — Refatoração para orientação a objetos
 - [x] v1.0 — Menu completo, validações e encapsulamento
-- [ ] v1.1 — Persistência com SQLite + JDBC
-- [ ] v1.2 — Separação em camadas (model, repository, service, ui)
+- [x] v1.1 — `BigDecimal`, `id` e modelo sem impressão
+- [ ] v1.2 — Persistência com SQLite + JDBC
+- [ ] v1.3 — Separação em camadas (model, repository, service, ui)
 - [ ] v2.0 — API REST com Spring Boot
 
 ---

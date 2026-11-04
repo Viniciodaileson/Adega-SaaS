@@ -1,13 +1,28 @@
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 public class Bebida {
 
+    private final int id;
     private String nome;
-    private double preco;
+    private BigDecimal preco;
     private int quantEstoque;
 
-    public Bebida(String nome, double preco, int quantEstoque) {
+    public Bebida(int id, String nome, BigDecimal preco, int quantEstoque) {
+
+        if (id <= 0) {
+            throw new IllegalArgumentException("O id deve ser maior que zero.");
+        }
+
+        this.id = id;
+
         setNome(nome);
         setPreco(preco);
         setQuantEstoque(quantEstoque);
+    }
+
+    public int getId() {
+        return id;
     }
 
     public String getNome() {
@@ -23,24 +38,26 @@ public class Bebida {
         this.nome = nome.trim();
     }
 
-    public double getPreco() {
+    public BigDecimal getPreco() {
         return preco;
     }
 
-    public void setPreco(double preco) {
+    public void setPreco(BigDecimal preco) {
 
-        if (preco <= 0) {
+        if (preco == null || preco.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("O preço deve ser maior que zero.");
         }
 
-        this.preco = preco;
+        // Normaliza para duas casas decimais (ex: 25.9 -> 25.90)
+        this.preco = preco.setScale(2, RoundingMode.HALF_UP);
     }
 
     public int getQuantEstoque() {
         return quantEstoque;
     }
 
-    public void setQuantEstoque(int quantEstoque) {
+    // Privado de propósito: o estoque só muda por venda ou reposição.
+    private void setQuantEstoque(int quantEstoque) {
 
         if (quantEstoque < 0) {
             throw new IllegalArgumentException("O estoque não pode ser negativo.");
@@ -49,51 +66,67 @@ public class Bebida {
         this.quantEstoque = quantEstoque;
     }
 
-    public boolean vender(int quantidade) {
+    public Resultado vender(int quantidade) {
 
         if (quantidade <= 0) {
-            System.out.println("Quantidade inválida para venda.");
-            return false;
+            return Resultado.falha("Quantidade inválida para venda.");
         }
 
         if (quantidade > quantEstoque) {
-            System.out.println("Quantidade insuficiente em estoque. Disponível: " + quantEstoque);
-            return false;
+            return Resultado.falha("Quantidade insuficiente em estoque. Disponível: " + quantEstoque);
         }
 
         quantEstoque -= quantidade;
 
-        System.out.println("Venda realizada com sucesso! Quantidade vendida: " + quantidade);
-
         if (quantEstoque == 0) {
-            System.out.println("A bebida " + nome + " está esgotada.");
+            return Resultado.ok(
+                    "Venda realizada com sucesso! Quantidade vendida: " + quantidade
+                            + ". A bebida " + nome + " está esgotada."
+            );
         }
 
-        return true;
+        return Resultado.ok("Venda realizada com sucesso! Quantidade vendida: " + quantidade);
     }
 
-    public boolean reporEstoque(int quantidade) {
+    public Resultado reporEstoque(int quantidade) {
 
         if (quantidade <= 0) {
-            System.out.println("Quantidade inválida para reposição.");
-            return false;
+            return Resultado.falha("Quantidade inválida para reposição.");
         }
 
         quantEstoque += quantidade;
 
-        System.out.println("Estoque reposto com sucesso! Quantidade adicionada: " + quantidade);
-
-        return true;
+        return Resultado.ok("Estoque reposto com sucesso! Quantidade adicionada: " + quantidade);
     }
 
-    public double valorEmEstoque() {
-        return preco * quantEstoque;
+    public BigDecimal valorEmEstoque() {
+        return preco.multiply(BigDecimal.valueOf(quantEstoque));
+    }
+
+    @Override
+    public boolean equals(Object outro) {
+
+        if (this == outro) {
+            return true;
+        }
+
+        if (!(outro instanceof Bebida outra)) {
+            return false;
+        }
+
+        return id == outra.id;
+    }
+
+    @Override
+    public int hashCode() {
+        return Integer.hashCode(id);
     }
 
     @Override
     public String toString() {
         return String.format(
-                "%s | R$ %.2f | %d un. | total: R$ %.2f",
+                "%d - %s | R$ %.2f | %d un. | total: R$ %.2f",
+                id,
                 nome,
                 preco,
                 quantEstoque,
