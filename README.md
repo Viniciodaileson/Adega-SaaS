@@ -16,11 +16,12 @@ O objetivo é criar um sistema completo de gerenciamento para adegas, iniciando 
 ## Tecnologias
 
 - Java 21
+- Maven
 - SQLite (via JDBC)
 - Git
 - GitHub
 
-## Funcionalidades (v1.2)
+## Funcionalidades (v1.3)
 
 - Cadastro de bebidas com `id`, nome, preço e quantidade em estoque
 - Consulta do estoque com valor total
@@ -29,48 +30,57 @@ O objetivo é criar um sistema completo de gerenciamento para adegas, iniciando 
 - Validação de dados (nome, preço, quantidade e entradas inválidas)
 - Bloqueio de bebidas com nome duplicado (na aplicação e no banco)
 - Preço com `BigDecimal` (sem erro de arredondamento em dinheiro)
-- **Dados salvos em SQLite: nada se perde ao fechar o programa**
+- Dados salvos em SQLite: nada se perde ao fechar o programa
+- Código organizado em camadas: `model`, `repository`, `service` e `ui`
 
 ## Como executar
 
-Pré-requisitos: JDK 21 (`java -version`) e o driver JDBC do SQLite.
+Pré-requisitos: JDK 21 (`java -version`). O Maven vem pelo wrapper, não precisa instalar.
 
 ```powershell
-# 1. Baixa o driver para lib/ (só precisa na primeira vez)
-.\baixar-driver.ps1
+# Compila
+.\mvnw.cmd compile
 
-# 2. Compila
-javac -cp "lib\sqlite-jdbc-3.54.1.0.jar" *.java
-
-# 3. Executa
-java -cp ".;lib\sqlite-jdbc-3.54.1.0.jar" CadastroBebidas
+# Executa
+.\mvnw.cmd exec:java
 ```
 
-Se o Windows bloquear o script, use:
+Na primeira execução o wrapper baixa o Maven e o driver do SQLite (precisa de internet).
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\baixar-driver.ps1
-```
-
-No VS Code, com a extensão **Extension Pack for Java** instalada, o `.vscode/settings.json` já aponta para o driver — basta usar o botão ▶.
+No VS Code, com a **Extension Pack for Java**, o projeto é reconhecido como Maven automaticamente.
 
 ## Estrutura
 
 ```
 AdegaSaaS/
-├── Bebida.java            # Modelo: dados, identidade e regras de estoque
-├── Resultado.java         # Retorno das operações (sucesso/falha + mensagem)
-├── ConexaoBanco.java      # Abre a conexão e cria a tabela
-├── BebidaRepository.java  # SQL: salvar, listar, buscar e atualizar
-├── CadastroBebidas.java   # Interface de console (menu)
-├── baixar-driver.ps1      # Baixa o driver JDBC do SQLite
-├── lib/                   # Driver (não versionado)
-└── adega.db               # Banco de dados (não versionado)
+├── pom.xml
+├── mvnw / mvnw.cmd
+├── .mvn/wrapper/maven-wrapper.properties
+├── src/main/java/com/adega/
+│   ├── AdegaApplication.java        # Ponto de entrada
+│   ├── model/
+│   │   ├── Bebida.java              # Estado e regras de uma bebida
+│   │   └── Resultado.java           # Sucesso/falha + mensagem + valor
+│   ├── repository/
+│   │   ├── ConexaoBanco.java        # Conexão e criação da tabela
+│   │   └── BebidaRepository.java    # SQL (INSERT, SELECT, UPDATE)
+│   ├── service/
+│   │   └── BebidaService.java       # Orquestra repositório + regras
+│   └── ui/
+│       └── CadastroBebidas.java     # Menu de console
+└── adega.db                         # Banco (gerado, não versionado)
 ```
+
+## Camadas
+
+- `model`: o que é uma bebida e o que ela sabe fazer (vender, repor, calcular total).
+- `repository`: como os dados são gravados e lidos do banco.
+- `service`: junta as duas coisas — busca, valida duplicidade, decide quando salvar.
+- `ui`: conversa com o usuário. Não sabe SQL e não conhece o banco.
 
 ## Banco de dados
 
-O arquivo `adega.db` é criado automaticamente na primeira execução, nesta pasta.
+O arquivo `adega.db` é criado automaticamente na primeira execução, na raiz do projeto.
 
 ```sql
 CREATE TABLE bebidas (
@@ -81,11 +91,6 @@ CREATE TABLE bebidas (
 );
 ```
 
-- `AUTOINCREMENT`: o banco gera o `id`, a aplicação não inventa mais números.
-- `COLLATE NOCASE UNIQUE`: impede nomes repetidos ignorando maiúsculas/minúsculas.
-- `preco TEXT`: o SQLite não tem tipo decimal; guardamos como texto para não perder centavos. (Em produção, o comum é guardar centavos em `INTEGER`.)
-- `CHECK (quant_estoque >= 0)`: o banco também recusa estoque negativo.
-
 Para começar do zero, apague `adega.db` e rode de novo.
 
 ## Roadmap
@@ -95,8 +100,10 @@ Para começar do zero, apague `adega.db` e rode de novo.
 - [x] v1.0 — Menu completo, validações e encapsulamento
 - [x] v1.1 — `BigDecimal`, `id` e modelo sem impressão
 - [x] v1.2 — Persistência com SQLite + JDBC
-- [ ] v1.3 — Separação em camadas (model, repository, service, ui)
+- [x] v1.3 — Maven e separação em camadas
+- [ ] v1.4 — Testes automatizados com JUnit
 - [ ] v2.0 — API REST com Spring Boot
+- [ ] v2.1 — Front-end web consumindo a API
 
 ---
 

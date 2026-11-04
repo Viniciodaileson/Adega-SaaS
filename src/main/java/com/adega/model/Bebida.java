@@ -1,3 +1,5 @@
+package com.adega.model;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 

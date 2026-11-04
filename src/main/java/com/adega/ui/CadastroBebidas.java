@@ -1,26 +1,19 @@
+package com.adega.ui;
+
+import com.adega.model.Bebida;
+import com.adega.model.Resultado;
+import com.adega.service.BebidaService;
+
 import java.math.BigDecimal;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Scanner;
 
 public class CadastroBebidas {
 
     private final Scanner sc = new Scanner(System.in);
-    private final BebidaRepository repositorio = new BebidaRepository();
+    private final BebidaService servico = new BebidaService();
 
-    public static void main(String[] args) {
-
-        try {
-            ConexaoBanco.inicializar();
-        } catch (SQLException e) {
-            System.out.println("Não foi possível abrir o banco de dados: " + e.getMessage());
-            return;
-        }
-
-        new CadastroBebidas().executar();
-    }
-
-    private void executar() {
+    public void executar() {
 
         int opcao;
 
@@ -84,7 +77,7 @@ public class CadastroBebidas {
 
         String nome = lerTexto("Digite o nome da bebida: ");
 
-        if (repositorio.buscarPorNome(nome) != null) {
+        if (servico.buscarPorNome(nome) != null) {
             System.out.println("Já existe uma bebida cadastrada com esse nome.");
             return;
         }
@@ -94,11 +87,9 @@ public class CadastroBebidas {
 
         try {
 
-            Bebida bebida = new Bebida(0, nome, preco, quantEstoque);
+            Resultado resultado = servico.cadastrar(nome, preco, quantEstoque);
 
-            Bebida salva = repositorio.salvar(bebida);
-
-            System.out.println("Bebida cadastrada com sucesso! ID: " + salva.getId());
+            System.out.println(resultado.mensagem());
 
         } catch (IllegalArgumentException e) {
             System.out.println("Não foi possível cadastrar: " + e.getMessage());
@@ -109,7 +100,7 @@ public class CadastroBebidas {
 
         System.out.println("\n--- ESTOQUE ---");
 
-        List<Bebida> bebidas = repositorio.listar();
+        List<Bebida> bebidas = servico.listar();
 
         if (bebidas.isEmpty()) {
             System.out.println("Nenhuma bebida cadastrada.");
@@ -139,23 +130,17 @@ public class CadastroBebidas {
 
         String nome = lerTexto("Digite o nome da bebida: ");
 
-        Bebida bebida = repositorio.buscarPorNome(nome);
-
-        if (bebida == null) {
+        if (servico.buscarPorNome(nome) == null) {
             System.out.println("Bebida não encontrada: " + nome);
             return;
         }
 
         int quantidade = lerInteiro("Digite a quantidade a ser reposta: ");
 
-        Resultado resultado = bebida.reporEstoque(quantidade);
-
-        if (resultado.sucesso()) {
-            repositorio.atualizarEstoque(bebida);
-        }
+        Resultado resultado = servico.repor(nome, quantidade);
 
         System.out.println(resultado.mensagem());
-        System.out.println("Estoque atual: " + bebida.getQuantEstoque());
+        System.out.println("Estoque atual: " + servico.buscarPorNome(nome).getQuantEstoque());
     }
 
     private void realizarVenda() {
@@ -164,29 +149,22 @@ public class CadastroBebidas {
 
         String nome = lerTexto("Digite o nome da bebida: ");
 
-        Bebida bebida = repositorio.buscarPorNome(nome);
-
-        if (bebida == null) {
+        if (servico.buscarPorNome(nome) == null) {
             System.out.println("Bebida não encontrada: " + nome);
             return;
         }
 
         int quantidade = lerInteiro("Quantas unidades deseja comprar? ");
 
-        Resultado resultado = bebida.vender(quantidade);
+        Resultado resultado = servico.vender(nome, quantidade);
 
         System.out.println(resultado.mensagem());
 
         if (resultado.sucesso()) {
-
-            repositorio.atualizarEstoque(bebida);
-
-            BigDecimal total = bebida.getPreco().multiply(BigDecimal.valueOf(quantidade));
-
-            System.out.printf("Total da venda: R$ %.2f%n", total);
+            System.out.printf("Total da venda: R$ %.2f%n", resultado.valorTotal());
         }
 
-        System.out.println("Estoque atual: " + bebida.getQuantEstoque());
+        System.out.println("Estoque atual: " + servico.buscarPorNome(nome).getQuantEstoque());
     }
 
     private String lerTexto(String mensagem) {

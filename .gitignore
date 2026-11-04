@@ -8,14 +8,10 @@ out/
 build/
 target/
 
-# Dependências baixadas
-lib/*.jar
-
 # IDEs
 .idea/
 *.iml
-.vscode/*
-!.vscode/settings.json
+.vscode/
 .settings/
 .classpath
 .project

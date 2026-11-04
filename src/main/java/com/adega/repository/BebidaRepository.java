@@ -1,3 +1,7 @@
+package com.adega.repository;
+
+import com.adega.model.Bebida;
+
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
