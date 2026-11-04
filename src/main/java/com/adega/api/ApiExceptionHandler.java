@@ -4,6 +4,9 @@ import com.adega.dto.ErroResponse;
 import com.adega.exception.ConflitoException;
 import com.adega.exception.RecursoNaoEncontradoException;
 import com.adega.exception.RegraNegocioException;
+import com.adega.security.exception.AcessoNegadoException;
+import com.adega.security.exception.CredenciaisInvalidasException;
+import com.adega.security.exception.TokenInvalidoException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -29,6 +32,21 @@ public class ApiExceptionHandler {
     @ExceptionHandler(RegraNegocioException.class)
     public ResponseEntity<ErroResponse> tratarRegraNegocio(RegraNegocioException excecao) {
         return resposta(HttpStatus.BAD_REQUEST, "Regra de negócio violada", excecao.getMessage());
+    }
+
+    @ExceptionHandler(TokenInvalidoException.class)
+    public ResponseEntity<ErroResponse> tratarTokenInvalido(TokenInvalidoException excecao) {
+        return resposta(HttpStatus.UNAUTHORIZED, "Não autenticado", excecao.getMessage());
+    }
+
+    @ExceptionHandler(CredenciaisInvalidasException.class)
+    public ResponseEntity<ErroResponse> tratarCredenciaisInvalidas(CredenciaisInvalidasException excecao) {
+        return resposta(HttpStatus.UNAUTHORIZED, "Não autenticado", excecao.getMessage());
+    }
+
+    @ExceptionHandler(AcessoNegadoException.class)
+    public ResponseEntity<ErroResponse> tratarAcessoNegado(AcessoNegadoException excecao) {
+        return resposta(HttpStatus.FORBIDDEN, "Acesso negado", excecao.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

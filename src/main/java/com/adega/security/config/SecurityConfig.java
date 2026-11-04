@@ -1,0 +1,88 @@
+package com.adega.security.config;
+
+import com.adega.security.audit.AuditFilter;
+import com.adega.security.jwt.JwtAuthenticationFilter;
+import com.adega.security.jwt.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   JwtService jwtService,
+                                                   ApplicationEventPublisher publicador) throws Exception {
+
+        JwtAuthenticationFilter filtroJwt = new JwtAuthenticationFilter(jwtService);
+        AuditFilter filtroAuditoria = new AuditFilter(publicador);
+
+        return http
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(sessao -> sessao.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .headers(cabecalhos -> cabecalhos
+                        .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
+                        .contentTypeOptions(Customizer.withDefaults()))
+                .authorizeHttpRequests(autorizacao -> autorizacao
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/.well-known/jwks.json",
+                                "/h2-console/**",
+                                "/error"
+                        ).permitAll()
+                        .anyRequest().authenticated())
+                .exceptionHandling(excecoes -> excecoes
+                        .authenticationEntryPoint(this::responderNaoAutenticado)
+                        .accessDeniedHandler(this::responderAcessoNegado))
+                .addFilterBefore(filtroJwt, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(filtroAuditoria, JwtAuthenticationFilter.class)
+                .build();
+    }
+
+    private void responderNaoAutenticado(HttpServletRequest requisicao,
+                                         HttpServletResponse resposta,
+                                         AuthenticationException excecao) throws IOException {
+        escreverErro(resposta, HttpStatus.UNAUTHORIZED, "Não autenticado",
+                "Informe um token de acesso válido.");
+    }
+
+    private void responderAcessoNegado(HttpServletRequest requisicao,
+                                       HttpServletResponse resposta,
+                                       AccessDeniedException excecao) throws IOException {
+        escreverErro(resposta, HttpStatus.FORBIDDEN, "Acesso negado",
+                "Você não tem permissão para acessar este recurso.");
+    }
+
+    private void escreverErro(HttpServletResponse resposta,
+                              HttpStatus status,
+                              String erro,
+                              String detalhe) throws IOException {
+
+        resposta.setStatus(status.value());
+        resposta.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        resposta.setCharacterEncoding(StandardCharsets.UTF_8.name());
+
+        resposta.getWriter().write("{\"status\":" + status.value()
+                + ",\"erro\":\"" + erro + "\""
+                + ",\"detalhes\":[\"" + detalhe + "\"]}");
+    }
+}
