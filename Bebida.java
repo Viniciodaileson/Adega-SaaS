@@ -8,10 +8,14 @@ public class Bebida {
     private BigDecimal preco;
     private int quantEstoque;
 
+    /**
+     * id 0 significa "ainda não salvo no banco".
+     * Depois do INSERT, o repositório devolve a bebida com o id gerado.
+     */
     public Bebida(int id, String nome, BigDecimal preco, int quantEstoque) {
 
-        if (id <= 0) {
-            throw new IllegalArgumentException("O id deve ser maior que zero.");
+        if (id < 0) {
+            throw new IllegalArgumentException("O id não pode ser negativo.");
         }
 
         this.id = id;

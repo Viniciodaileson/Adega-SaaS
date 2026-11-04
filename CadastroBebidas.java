@@ -1,14 +1,22 @@
 import java.math.BigDecimal;
-import java.util.ArrayList;
+import java.sql.SQLException;
+import java.util.List;
 import java.util.Scanner;
 
 public class CadastroBebidas {
 
     private final Scanner sc = new Scanner(System.in);
-    private final ArrayList<Bebida> bebidas = new ArrayList<>();
-    private int proximoId = 1;
+    private final BebidaRepository repositorio = new BebidaRepository();
 
     public static void main(String[] args) {
+
+        try {
+            ConexaoBanco.inicializar();
+        } catch (SQLException e) {
+            System.out.println("Não foi possível abrir o banco de dados: " + e.getMessage());
+            return;
+        }
+
         new CadastroBebidas().executar();
     }
 
@@ -22,30 +30,37 @@ public class CadastroBebidas {
 
             opcao = lerInteiro("Digite a opção desejada: ");
 
-            switch (opcao) {
+            try {
 
-                case 1:
-                    cadastrarBebida();
-                    break;
+                switch (opcao) {
 
-                case 2:
-                    consultarEstoque();
-                    break;
+                    case 1:
+                        cadastrarBebida();
+                        break;
 
-                case 3:
-                    reporEstoque();
-                    break;
+                    case 2:
+                        consultarEstoque();
+                        break;
 
-                case 4:
-                    realizarVenda();
-                    break;
+                    case 3:
+                        reporEstoque();
+                        break;
 
-                case 0:
-                    System.out.println("Saindo do sistema...");
-                    break;
+                    case 4:
+                        realizarVenda();
+                        break;
 
-                default:
-                    System.out.println("Opção inválida. Tente novamente.");
+                    case 0:
+                        System.out.println("Saindo do sistema...");
+                        break;
+
+                    default:
+                        System.out.println("Opção inválida. Tente novamente.");
+                }
+
+            } catch (IllegalStateException e) {
+                // Erros de banco de dados: a mensagem já vem pronta do repositório.
+                System.out.println(e.getMessage());
             }
 
         } while (opcao != 0);
@@ -70,7 +85,7 @@ public class CadastroBebidas {
 
         String nome = lerTexto("Digite o nome da bebida: ");
 
-        if (buscarBebida(nome) != null) {
+        if (repositorio.buscarPorNome(nome) != null) {
             System.out.println("Já existe uma bebida cadastrada com esse nome.");
             return;
         }
@@ -80,12 +95,12 @@ public class CadastroBebidas {
 
         try {
 
-            Bebida bebida = new Bebida(proximoId, nome, preco, quantEstoque);
+            // id 0 = ainda não salvo; o banco gera o id de verdade.
+            Bebida bebida = new Bebida(0, nome, preco, quantEstoque);
 
-            bebidas.add(bebida);
-            proximoId++;
+            Bebida salva = repositorio.salvar(bebida);
 
-            System.out.println("Bebida cadastrada com sucesso! ID: " + bebida.getId());
+            System.out.println("Bebida cadastrada com sucesso! ID: " + salva.getId());
 
         } catch (IllegalArgumentException e) {
             System.out.println("Não foi possível cadastrar: " + e.getMessage());
@@ -95,6 +110,8 @@ public class CadastroBebidas {
     private void consultarEstoque() {
 
         System.out.println("\n--- ESTOQUE ---");
+
+        List<Bebida> bebidas = repositorio.listar();
 
         if (bebidas.isEmpty()) {
             System.out.println("Nenhuma bebida cadastrada.");
@@ -122,14 +139,9 @@ public class CadastroBebidas {
 
         System.out.println("\n--- REPOSIÇÃO ---");
 
-        if (bebidas.isEmpty()) {
-            System.out.println("Nenhuma bebida cadastrada.");
-            return;
-        }
-
         String nome = lerTexto("Digite o nome da bebida: ");
 
-        Bebida bebida = buscarBebida(nome);
+        Bebida bebida = repositorio.buscarPorNome(nome);
 
         if (bebida == null) {
             System.out.println("Bebida não encontrada: " + nome);
@@ -140,6 +152,10 @@ public class CadastroBebidas {
 
         Resultado resultado = bebida.reporEstoque(quantidade);
 
+        if (resultado.sucesso()) {
+            repositorio.atualizarEstoque(bebida);
+        }
+
         System.out.println(resultado.mensagem());
         System.out.println("Estoque atual: " + bebida.getQuantEstoque());
     }
@@ -148,14 +164,9 @@ public class CadastroBebidas {
 
         System.out.println("\n--- VENDA ---");
 
-        if (bebidas.isEmpty()) {
-            System.out.println("Nenhuma bebida cadastrada.");
-            return;
-        }
-
         String nome = lerTexto("Digite o nome da bebida: ");
 
-        Bebida bebida = buscarBebida(nome);
+        Bebida bebida = repositorio.buscarPorNome(nome);
 
         if (bebida == null) {
             System.out.println("Bebida não encontrada: " + nome);
@@ -170,24 +181,14 @@ public class CadastroBebidas {
 
         if (resultado.sucesso()) {
 
+            repositorio.atualizarEstoque(bebida);
+
             BigDecimal total = bebida.getPreco().multiply(BigDecimal.valueOf(quantidade));
 
             System.out.printf("Total da venda: R$ %.2f%n", total);
         }
 
         System.out.println("Estoque atual: " + bebida.getQuantEstoque());
-    }
-
-    private Bebida buscarBebida(String nome) {
-
-        for (Bebida bebida : bebidas) {
-
-            if (bebida.getNome().equalsIgnoreCase(nome)) {
-                return bebida;
-            }
-        }
-
-        return null;
     }
 
     private String lerTexto(String mensagem) {

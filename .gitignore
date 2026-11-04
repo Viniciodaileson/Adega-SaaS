@@ -8,10 +8,14 @@ out/
 build/
 target/
 
+# Dependências baixadas
+lib/*.jar
+
 # IDEs
 .idea/
 *.iml
-.vscode/
+.vscode/*
+!.vscode/settings.json
 .settings/
 .classpath
 .project
@@ -20,6 +24,7 @@ target/
 .DS_Store
 Thumbs.db
 
-# Banco de dados (próximas etapas)
+# Banco de dados
 *.db
 *.sqlite
+*.db-journal
