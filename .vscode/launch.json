@@ -1,0 +1,12 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "AdegaSaaS",
+            "request": "launch",
+            "mainClass": "com.adega.AdegaApplication",
+            "projectName": "adega-saas"
+        }
+    ]
+}

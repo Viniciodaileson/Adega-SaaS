@@ -11,7 +11,9 @@ target/
 # IDEs
 .idea/
 *.iml
-.vscode/
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
 .settings/
 .classpath
 .project

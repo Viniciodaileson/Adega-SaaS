@@ -1,0 +1,28 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Executar AdegaSaaS",
+            "type": "shell",
+            "command": "${workspaceFolder}\\mvnw.cmd",
+            "args": [
+                "exec:java"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Testar AdegaSaaS",
+            "type": "shell",
+            "command": "${workspaceFolder}\\mvnw.cmd",
+            "args": [
+                "test"
+            ],
+            "group": "test",
+            "problemMatcher": []
+        }
+    ]
+}
