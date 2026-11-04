@@ -1,10 +1,12 @@
 package com.adega.security.config;
 
 import com.adega.security.audit.AuditFilter;
+import com.adega.security.auth.LimiteTentativasFilter;
 import com.adega.security.jwt.JwtAuthenticationFilter;
 import com.adega.security.jwt.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,9 +22,13 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -31,13 +37,16 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    JwtService jwtService,
-                                                   ApplicationEventPublisher publicador) throws Exception {
+                                                   ApplicationEventPublisher publicador,
+                                                   LimiteTentativasFilter filtroLimite,
+                                                   CorsConfigurationSource fonteCors) throws Exception {
 
         JwtAuthenticationFilter filtroJwt = new JwtAuthenticationFilter(jwtService);
         AuditFilter filtroAuditoria = new AuditFilter(publicador);
 
         return http
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(fonteCors))
                 .sessionManagement(sessao -> sessao.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(cabecalhos -> cabecalhos
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
@@ -55,7 +64,39 @@ public class SecurityConfig {
                         .accessDeniedHandler(this::responderAcessoNegado))
                 .addFilterBefore(filtroJwt, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(filtroAuditoria, JwtAuthenticationFilter.class)
+                .addFilterAfter(filtroLimite, AuditFilter.class)
                 .build();
+    }
+
+    @Bean
+    public CorsConfigurationSource fonteCors() {
+
+        CorsConfiguration configuracao = new CorsConfiguration();
+
+        configuracao.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "http://127.0.0.1:5173"
+        ));
+        configuracao.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuracao.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuracao.setExposedHeaders(List.of("Authorization"));
+        configuracao.setAllowCredentials(false);
+        configuracao.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource fonte = new UrlBasedCorsConfigurationSource();
+        fonte.registerCorsConfiguration("/**", configuracao);
+
+        return fonte;
+    }
+
+    @Bean
+    public FilterRegistrationBean<LimiteTentativasFilter> registroLimiteDesativado(
+            LimiteTentativasFilter filtro) {
+
+        FilterRegistrationBean<LimiteTentativasFilter> registro = new FilterRegistrationBean<>(filtro);
+        registro.setEnabled(false);
+
+        return registro;
     }
 
     private void responderNaoAutenticado(HttpServletRequest requisicao,

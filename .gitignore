@@ -28,3 +28,7 @@ Thumbs.db
 *.db-journal
 *.mv.db
 *.trace.db
+
+# Front-end
+node_modules/
+dist/

@@ -2,10 +2,12 @@ package com.adega.security.auth;
 
 import com.adega.security.jwt.JwtService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -27,6 +29,12 @@ public class AuthController {
     @PostMapping("/api/auth/refresh")
     public LoginResponse atualizarToken(@Valid @RequestBody RefreshRequest requisicao) {
         return servico.atualizarToken(requisicao);
+    }
+
+    @PostMapping("/api/auth/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void sair(@Valid @RequestBody RefreshRequest requisicao) {
+        servico.encerrarSessao(requisicao);
     }
 
     @GetMapping(value = "/.well-known/jwks.json", produces = MediaType.APPLICATION_JSON_VALUE)

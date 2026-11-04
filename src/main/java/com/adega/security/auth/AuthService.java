@@ -77,6 +77,10 @@ public class AuthService {
         return emitir(usuario, rotacao.novoToken());
     }
 
+    public void encerrarSessao(RefreshRequest requisicao) {
+        refreshTokenService.revogarPorToken(requisicao.refreshToken());
+    }
+
     private LoginResponse emitir(Usuario usuario, String refreshToken) {
 
         String accessToken = jwtService.emitirAccessToken(usuario.getId(), usuario.getLogin());

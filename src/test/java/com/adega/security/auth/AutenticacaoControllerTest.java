@@ -48,8 +48,12 @@ class AutenticacaoControllerTest {
     @Autowired
     private PasswordEncoder codificador;
 
+    @Autowired
+    private LimiteTentativasFilter filtroLimite;
+
     @BeforeEach
     void preparar() {
+        filtroLimite.limpar();
         refreshTokens.deleteAll();
         usuarios.deleteAll();
         usuarios.save(new Usuario("teste", codificador.encode("Senha@123")));
@@ -191,6 +195,46 @@ class AutenticacaoControllerTest {
         MvcResult resultado = efetuarRefresh("token-que-nao-existe");
 
         assertEquals(401, resultado.getResponse().getStatus());
+    }
+
+    @Test
+    void limiteDeTentativasPorIpRetorna429() throws Exception {
+
+        for (int tentativa = 0; tentativa < 5; tentativa++) {
+            mockMvc.perform(post("/api/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(corpoLogin("teste", "SenhaErrada")))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpoLogin("teste", "Senha@123")))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.status").value(429));
+
+        filtroLimite.limpar();
+    }
+
+    @Test
+    void logoutRevogaRefreshToken() throws Exception {
+
+        String refreshInicial = corpo(efetuarLogin("teste", "Senha@123")).get("refreshToken").asText();
+
+        mockMvc.perform(post("/api/auth/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new RefreshRequest(refreshInicial))))
+                .andExpect(status().isNoContent());
+
+        MvcResult aposLogout = efetuarRefresh(refreshInicial);
+
+        assertEquals(401, aposLogout.getResponse().getStatus());
+
+        Usuario usuario = usuarios.findByLogin("teste").orElseThrow();
+        List<RefreshToken> tokens = refreshTokens.findByUsuarioId(usuario.getId());
+
+        assertFalse(tokens.isEmpty());
+        assertTrue(tokens.stream().allMatch(RefreshToken::isRevogado));
     }
 
     private MvcResult efetuarLogin(String login, String senha) throws Exception {

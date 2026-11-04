@@ -25,9 +25,12 @@ O objetivo é criar um sistema completo de gerenciamento para adegas, iniciando 
 - BouncyCastle (Argon2id)
 - Bean Validation
 - JUnit 5 + MockMvc
+- React 19
+- Vite 8
+- Axios
 - Git e GitHub
 
-## Funcionalidades (v2.1)
+## Funcionalidades (v2.2)
 
 - API REST para gerenciar bebidas
 - Cadastro, listagem, busca, atualização e remoção
@@ -42,11 +45,19 @@ O objetivo é criar um sistema completo de gerenciamento para adegas, iniciando 
 - Chave pública exposta em `/.well-known/jwks.json`
 - API stateless: todo endpoint de bebidas exige `Authorization: Bearer`
 - Trilha de auditoria imutável gravada de forma assíncrona
-- Testes automatizados do modelo, dos endpoints e da segurança (36 testes)
+- Limite de tentativas de login por IP (5 falhas em 15 minutos bloqueiam por 15 minutos)
+- Logout com revogação de todos os refresh tokens do usuário
+- CORS restrito ao endereço do front-end
+- Front-end React com tela de login e painel de gerenciamento
+- Tokens mantidos apenas na memória do navegador
+- Renovação automática do access token com rotação do refresh token
+- Testes automatizados do modelo, dos endpoints e da segurança (38 testes)
 
 ## Como executar
 
-Pré-requisitos: JDK 21 (`java -version`). O Maven vem pelo wrapper, não precisa instalar.
+Pré-requisitos: JDK 21 (`java -version`) e Node.js 22 ou superior (`node -v`). O Maven vem pelo wrapper, não precisa instalar.
+
+### Backend
 
 ```powershell
 .\mvnw.cmd spring-boot:run
@@ -54,7 +65,19 @@ Pré-requisitos: JDK 21 (`java -version`). O Maven vem pelo wrapper, não precis
 
 A API sobe em `http://localhost:8080`.
 
-No VS Code, use `Ctrl+Shift+B` (tarefa **Executar AdegaSaaS**) ou `F5`. Para parar, `Ctrl+C` no terminal.
+### Front-end
+
+Em outro terminal:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+O painel abre em `http://localhost:5173`.
+
+No VS Code, use `Ctrl+Shift+B` (tarefa **Executar AdegaSaaS**) ou `F5`. Para o front-end, use **Terminal → Executar Tarefa** e escolha **Executar front-end**. Para parar, `Ctrl+C` no terminal.
 
 ### Usuário administrador
 
@@ -86,6 +109,50 @@ Se nenhuma senha for definida, uma senha aleatória é gerada e exibida **uma ú
 
 Se esquecer a senha, pare a API, apague `adega.mv.db` e suba de novo.
 
+## Front-end
+
+O front-end fica na pasta `frontend/` e conversa com a API em `http://localhost:8080`.
+
+### Estrutura
+
+```
+frontend/
+├── index.html
+├── package.json
+├── vite.config.js
+└── src/
+    ├── main.jsx
+    ├── App.jsx
+    ├── estilos.css
+    ├── componentes/
+    │   ├── Login.jsx
+    │   └── PainelBebidas.jsx
+    └── servicos/
+        ├── api.js
+        ├── tokens.js
+        ├── erros.js
+        └── formatacao.js
+```
+
+### Como a sessão funciona
+
+- O `accessToken` e o `refreshToken` ficam **apenas na memória** do navegador, em um módulo próprio (`src/servicos/tokens.js`).
+- Nada é gravado em `localStorage`, `sessionStorage` ou cookies.
+- Recarregar a página (F5) encerra a sessão e volta para o login. Isso é intencional e alinhado à arquitetura stateless do backend.
+- O Axios anexa `Authorization: Bearer <token>` em todas as chamadas.
+- Quando a API responde `401`, o cliente tenta renovar o par de tokens usando o refresh token e repete a requisição original uma única vez.
+- Se a renovação falhar, os tokens são apagados e o usuário volta para a tela de login.
+- O botão **Sair** chama `POST /api/auth/logout`, revoga todos os refresh tokens do usuário e limpa a memória.
+
+### Painel
+
+- Tabela com ID, Nome, Preço, Quantidade em Estoque e Valor Total em Estoque.
+- Formulário para cadastrar nova bebida.
+- Ação **Vender 1 Unidade** em cada linha.
+- Ação **Repor Estoque** em cada linha, com a quantidade informada em uma caixa de diálogo.
+- Cartões de resumo com total de bebidas, unidades em estoque e valor total.
+- Mensagens de erro retornadas pelo backend traduzidas para linguagem amigável.
+
 ## Autenticação
 
 ### Login
@@ -112,6 +179,14 @@ $renovado = Invoke-RestMethod -Uri http://localhost:8080/api/auth/refresh -Metho
 
 Cada refresh token só pode ser usado uma vez. Se o mesmo token for enviado de novo, todos os refresh tokens daquele usuário são revogados imediatamente.
 
+### Encerrar a sessão
+
+```powershell
+Invoke-RestMethod -Uri http://localhost:8080/api/auth/logout -Method Post -ContentType "application/json" -Body "{`"refreshToken`":`"$($login.refreshToken)`"}"
+```
+
+O endpoint responde `204 No Content` e revoga todos os refresh tokens do usuário.
+
 ### Chave pública (JWKS)
 
 ```powershell
@@ -124,6 +199,7 @@ Invoke-RestMethod -Uri http://localhost:8080/.well-known/jwks.json
 |---|---|---|
 | POST | `/api/auth/login` | Público |
 | POST | `/api/auth/refresh` | Público |
+| POST | `/api/auth/logout` | Público |
 | GET | `/.well-known/jwks.json` | Público |
 | GET | `/api/bebidas` | Token |
 | GET | `/api/bebidas/{id}` | Token |
@@ -147,6 +223,10 @@ Invoke-RestMethod -Uri http://localhost:8080/.well-known/jwks.json
 - **Auditoria imutável**: a entidade é anotada com `@Immutable` e o repositório expõe apenas `save`.
 - **Auditoria assíncrona**: o filtro publica um evento e um listener com `@Async` grava em segundo plano.
 - **Resposta genérica no login**: login inexistente e senha errada devolvem a mesma mensagem, com verificação de hash fictício para reduzir diferença de tempo.
+- **Limite por IP**: 5 tentativas de login inválidas em 15 minutos bloqueiam o IP por 15 minutos, com resposta `429 Too Many Requests`.
+- **Logout com revogação**: o refresh token apresentado é localizado e todos os tokens do usuário são revogados.
+- **CORS restrito**: apenas `http://localhost:5173` e `http://127.0.0.1:5173`, com métodos e cabeçalhos explícitos e sem credenciais.
+- **Tokens no front-end apenas em memória**: sem persistência local, reduzindo o impacto de XSS sobre tokens armazenados.
 
 ## Testes
 
@@ -154,7 +234,7 @@ Invoke-RestMethod -Uri http://localhost:8080/.well-known/jwks.json
 .\mvnw.cmd test
 ```
 
-São 36 testes: 11 do modelo, 13 dos endpoints de bebidas e 12 de autenticação e segurança. Os testes usam H2 em memória.
+São 38 testes: 11 do modelo, 13 dos endpoints de bebidas e 14 de autenticação e segurança. Os testes usam H2 em memória.
 
 ## Estrutura
 
@@ -163,6 +243,22 @@ AdegaSaaS/
 ├── pom.xml
 ├── mvnw / mvnw.cmd
 ├── .mvn/wrapper/maven-wrapper.properties
+├── frontend/
+│   ├── index.html
+│   ├── package.json
+│   ├── vite.config.js
+│   └── src/
+│       ├── main.jsx
+│       ├── App.jsx
+│       ├── estilos.css
+│       ├── componentes/
+│       │   ├── Login.jsx
+│       │   └── PainelBebidas.jsx
+│       └── servicos/
+│           ├── api.js
+│           ├── tokens.js
+│           ├── erros.js
+│           └── formatacao.js
 ├── src/main/java/com/adega/
 │   ├── AdegaApplication.java
 │   ├── api/
@@ -177,6 +273,7 @@ AdegaSaaS/
 │       ├── auth/
 │       │   ├── AuthController.java
 │       │   ├── AuthService.java
+│       │   ├── LimiteTentativasFilter.java
 │       │   ├── LoginRequest.java
 │       │   ├── LoginResponse.java
 │       │   └── RefreshRequest.java
@@ -243,16 +340,17 @@ O console é útil apenas em desenvolvimento. Em produção, desligue com `sprin
 - [x] v1.4 — Testes automatizados com JUnit
 - [x] v2.0 — API REST com Spring Boot
 - [x] v2.1 — Login, JWT ES256, Argon2id, refresh rotativo e auditoria
-- [ ] v2.2 — Front-end web com React
+- [x] v2.2 — Front-end React, CORS, limite por IP e logout com revogação
+- [ ] v2.3 — Edição e exclusão de bebidas no painel
 
 ## Próximos passos de segurança
 
-- Limitar tentativas de login por IP e por usuário
-- Configurar CORS para o front-end
 - Persistir a chave privada em cofre ou KMS (hoje ela fica em memória e muda a cada reinício)
 - Servir a API somente por HTTPS
 - Criar rotina de limpeza de refresh tokens expirados
-- Endpoint de logout com revogação dos tokens
+- Migrar o limite de tentativas para um armazenamento distribuído (Redis) em cenário com múltiplas instâncias
+- Adicionar verificação de e-mail e política de troca de senha
+- Avaliar autenticação em dois fatores (TOTP)
 
 ---
 

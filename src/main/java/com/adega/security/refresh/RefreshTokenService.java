@@ -88,6 +88,13 @@ public class RefreshTokenService {
         repositorio.revogarTodosDoUsuario(usuarioId);
     }
 
+    @Transactional
+    public void revogarPorToken(String tokenRecebido) {
+
+        repositorio.findByHashToken(gerarHash(tokenRecebido))
+                .ifPresent(registro -> repositorio.revogarTodosDoUsuario(registro.getUsuarioId()));
+    }
+
     private String gerarToken() {
         byte[] bytes = new byte[32];
         GERADOR.nextBytes(bytes);

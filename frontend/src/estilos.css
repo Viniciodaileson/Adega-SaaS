@@ -1,0 +1,409 @@
+:root {
+  color-scheme: dark;
+  --cor-fundo: #14060b;
+  --cor-fundo-secundario: #1f0a12;
+  --cor-cartao: #26101a;
+  --cor-borda: #46202f;
+  --cor-texto: #f7ecef;
+  --cor-texto-suave: #c8a9b4;
+  --cor-destaque: #d4426a;
+  --cor-destaque-forte: #f0577f;
+  --cor-sucesso: #4ade80;
+  --cor-erro: #ff7a8a;
+  --sombra: 0 18px 45px rgba(0, 0, 0, 0.45);
+  --raio: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "Inter", system-ui, -apple-system, sans-serif;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(212, 66, 106, 0.18), transparent 45%),
+    radial-gradient(circle at 85% 90%, rgba(120, 20, 55, 0.28), transparent 50%),
+    var(--cor-fundo);
+  color: var(--cor-texto);
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.tela-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.cartao-login {
+  width: 100%;
+  max-width: 420px;
+  background: linear-gradient(160deg, var(--cor-cartao), var(--cor-fundo-secundario));
+  border: 1px solid var(--cor-borda);
+  border-radius: 20px;
+  padding: 36px 32px 28px;
+  box-shadow: var(--sombra);
+}
+
+.cabecalho-login {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.simbolo-adega {
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  font-size: 28px;
+  border-radius: 16px;
+  background: rgba(212, 66, 106, 0.16);
+  border: 1px solid rgba(212, 66, 106, 0.4);
+  margin-bottom: 14px;
+}
+
+.cabecalho-login h1 {
+  font-size: 1.7rem;
+  letter-spacing: 0.02em;
+}
+
+.cabecalho-login p {
+  margin-top: 8px;
+  color: var(--cor-texto-suave);
+  font-size: 0.92rem;
+}
+
+.formulario {
+  display: grid;
+  gap: 18px;
+}
+
+.campo {
+  display: grid;
+  gap: 7px;
+}
+
+.campo span {
+  font-size: 0.85rem;
+  color: var(--cor-texto-suave);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.campo input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--cor-borda);
+  background: rgba(10, 3, 6, 0.55);
+  color: var(--cor-texto);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.campo input::placeholder {
+  color: rgba(200, 169, 180, 0.55);
+}
+
+.campo input:focus {
+  border-color: var(--cor-destaque);
+  box-shadow: 0 0 0 3px rgba(212, 66, 106, 0.2);
+}
+
+.botao-principal {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--cor-destaque), var(--cor-destaque-forte));
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: transform 0.12s ease, filter 0.15s ease;
+}
+
+.botao-principal:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.botao-principal:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.botao-secundario {
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--cor-borda);
+  background: rgba(212, 66, 106, 0.1);
+  color: var(--cor-texto);
+  font-weight: 600;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.botao-secundario:hover:not(:disabled) {
+  background: rgba(212, 66, 106, 0.22);
+  border-color: var(--cor-destaque);
+}
+
+.rodape-login {
+  margin-top: 24px;
+  text-align: center;
+  color: var(--cor-texto-suave);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.mensagem-erro,
+.mensagem-sucesso {
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.mensagem-erro {
+  background: rgba(255, 122, 138, 0.12);
+  border: 1px solid rgba(255, 122, 138, 0.45);
+  color: var(--cor-erro);
+}
+
+.mensagem-sucesso {
+  background: rgba(74, 222, 128, 0.1);
+  border: 1px solid rgba(74, 222, 128, 0.4);
+  color: var(--cor-sucesso);
+}
+
+.tela-painel {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.cabecalho-painel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--cor-borda);
+  background: rgba(20, 6, 11, 0.75);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.marca-painel {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.marca-painel .simbolo-adega {
+  margin-bottom: 0;
+  width: 44px;
+  height: 44px;
+  font-size: 22px;
+}
+
+.marca-painel h1 {
+  font-size: 1.25rem;
+}
+
+.marca-painel p {
+  color: var(--cor-texto-suave);
+  font-size: 0.82rem;
+  margin-top: 3px;
+}
+
+.conteudo-painel {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 24px 56px;
+  display: grid;
+  gap: 22px;
+}
+
+.resumo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
+}
+
+.cartao-resumo {
+  background: linear-gradient(150deg, var(--cor-cartao), var(--cor-fundo-secundario));
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  padding: 18px 20px;
+  display: grid;
+  gap: 8px;
+}
+
+.cartao-resumo span {
+  color: var(--cor-texto-suave);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.cartao-resumo strong {
+  font-size: 1.45rem;
+  color: var(--cor-texto);
+}
+
+.bloco {
+  background: linear-gradient(160deg, rgba(38, 16, 26, 0.92), rgba(24, 8, 15, 0.92));
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  padding: 22px;
+  display: grid;
+  gap: 18px;
+}
+
+.bloco h2 {
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+}
+
+.formulario-cadastro {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.formulario-cadastro .botao-principal {
+  height: 45px;
+}
+
+.cabecalho-tabela {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.tabela-rolagem {
+  overflow-x: auto;
+}
+
+.tabela-bebidas {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.tabela-bebidas th,
+.tabela-bebidas td {
+  padding: 13px 14px;
+  text-align: left;
+  border-bottom: 1px solid rgba(70, 32, 47, 0.7);
+  font-size: 0.92rem;
+}
+
+.tabela-bebidas th {
+  color: var(--cor-texto-suave);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+}
+
+.tabela-bebidas tbody tr:hover {
+  background: rgba(212, 66, 106, 0.06);
+}
+
+.tabela-vazia {
+  text-align: center;
+  color: var(--cor-texto-suave);
+  padding: 26px 14px;
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.botao-acao {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(212, 66, 106, 0.55);
+  background: rgba(212, 66, 106, 0.18);
+  color: var(--cor-texto);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+}
+
+.botao-acao:hover:not(:disabled) {
+  background: rgba(212, 66, 106, 0.34);
+}
+
+.botao-acao-secundario {
+  border-color: var(--cor-borda);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.botao-acao-secundario:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 860px) {
+  .formulario-cadastro {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .formulario-cadastro .botao-principal {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 560px) {
+  .cabecalho-painel {
+    padding: 14px 18px;
+  }
+
+  .conteudo-painel {
+    padding: 20px 16px 40px;
+  }
+
+  .formulario-cadastro {
+    grid-template-columns: 1fr;
+  }
+
+  .formulario-cadastro .botao-principal {
+    grid-column: span 1;
+  }
+
+  .cabecalho-tabela {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
