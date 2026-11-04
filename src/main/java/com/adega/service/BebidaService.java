@@ -1,70 +1,96 @@
 package com.adega.service;
 
+import com.adega.dto.BebidaRequest;
+import com.adega.dto.BebidaResponse;
+import com.adega.dto.VendaResponse;
+import com.adega.exception.ConflitoException;
+import com.adega.exception.RecursoNaoEncontradoException;
 import com.adega.model.Bebida;
-import com.adega.model.Resultado;
 import com.adega.repository.BebidaRepository;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
 
+@Service
 public class BebidaService {
 
-    private final BebidaRepository repositorio = new BebidaRepository();
+    private final BebidaRepository repositorio;
 
-    public Resultado cadastrar(String nome, BigDecimal preco, int quantEstoque) {
-
-        if (repositorio.buscarPorNome(nome) != null) {
-            return Resultado.falha("Já existe uma bebida cadastrada com esse nome.");
-        }
-
-        Bebida salva = repositorio.salvar(new Bebida(0, nome, preco, quantEstoque));
-
-        return Resultado.ok("Bebida cadastrada com sucesso! ID: " + salva.getId());
+    public BebidaService(BebidaRepository repositorio) {
+        this.repositorio = repositorio;
     }
 
-    public List<Bebida> listar() {
-        return repositorio.listar();
+    @Transactional
+    public BebidaResponse cadastrar(BebidaRequest request) {
+
+        if (repositorio.existsByNomeIgnoreCase(request.nome())) {
+            throw new ConflitoException("Já existe uma bebida cadastrada com esse nome.");
+        }
+
+        Bebida bebida = new Bebida(request.nome(), request.preco(), request.quantEstoque());
+
+        return BebidaResponse.de(repositorio.save(bebida));
     }
 
-    public Bebida buscarPorNome(String nome) {
-        return repositorio.buscarPorNome(nome);
+    @Transactional(readOnly = true)
+    public List<BebidaResponse> listar() {
+        return repositorio.findAll(Sort.by("id"))
+                .stream()
+                .map(BebidaResponse::de)
+                .toList();
     }
 
-    public Resultado vender(String nome, int quantidade) {
-
-        Bebida bebida = repositorio.buscarPorNome(nome);
-
-        if (bebida == null) {
-            return Resultado.falha("Bebida não encontrada: " + nome);
-        }
-
-        Resultado resultado = bebida.vender(quantidade);
-
-        if (!resultado.sucesso()) {
-            return resultado;
-        }
-
-        repositorio.atualizarEstoque(bebida);
-
-        BigDecimal total = bebida.getPreco().multiply(BigDecimal.valueOf(quantidade));
-
-        return Resultado.ok(resultado.mensagem(), total);
+    @Transactional(readOnly = true)
+    public BebidaResponse buscarPorId(Long id) {
+        return BebidaResponse.de(buscarEntidade(id));
     }
 
-    public Resultado repor(String nome, int quantidade) {
+    @Transactional
+    public BebidaResponse atualizar(Long id, BebidaRequest request) {
 
-        Bebida bebida = repositorio.buscarPorNome(nome);
+        Bebida bebida = buscarEntidade(id);
 
-        if (bebida == null) {
-            return Resultado.falha("Bebida não encontrada: " + nome);
+        if (repositorio.existsByNomeIgnoreCaseAndIdNot(request.nome(), id)) {
+            throw new ConflitoException("Já existe uma bebida cadastrada com esse nome.");
         }
 
-        Resultado resultado = bebida.reporEstoque(quantidade);
+        bebida.setNome(request.nome());
+        bebida.setPreco(request.preco());
+        bebida.setQuantEstoque(request.quantEstoque());
 
-        if (resultado.sucesso()) {
-            repositorio.atualizarEstoque(bebida);
-        }
+        return BebidaResponse.de(repositorio.save(bebida));
+    }
 
-        return resultado;
+    @Transactional
+    public void remover(Long id) {
+        repositorio.delete(buscarEntidade(id));
+    }
+
+    @Transactional
+    public VendaResponse vender(Long id, int quantidade) {
+
+        Bebida bebida = buscarEntidade(id);
+        BigDecimal valorTotal = bebida.vender(quantidade);
+
+        repositorio.save(bebida);
+
+        return VendaResponse.de(bebida, quantidade, valorTotal);
+    }
+
+    @Transactional
+    public BebidaResponse repor(Long id, int quantidade) {
+
+        Bebida bebida = buscarEntidade(id);
+        bebida.reporEstoque(quantidade);
+
+        return BebidaResponse.de(repositorio.save(bebida));
+    }
+
+    private Bebida buscarEntidade(Long id) {
+        return repositorio.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Bebida não encontrada: " + id));
     }
 }

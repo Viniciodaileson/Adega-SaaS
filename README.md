@@ -17,38 +17,97 @@ O objetivo é criar um sistema completo de gerenciamento para adegas, iniciando 
 
 - Java 21
 - Maven
-- SQLite (via JDBC)
-- Git
-- GitHub
+- Spring Boot 3.5
+- Spring Data JPA
+- H2 (banco de dados)
+- Bean Validation
+- JUnit 5 + MockMvc
+- Git e GitHub
 
-## Funcionalidades (v1.4)
+## Funcionalidades (v2.0)
 
-- Cadastro de bebidas com `id`, nome, preço e quantidade em estoque
-- Consulta do estoque com valor total
-- Reposição de estoque
+- API REST para gerenciar bebidas
+- Cadastro, listagem, busca, atualização e remoção
 - Venda com baixa automática no estoque
-- Validação de dados (nome, preço, quantidade e entradas inválidas)
-- Bloqueio de bebidas com nome duplicado (na aplicação e no banco)
+- Reposição de estoque
+- Validação dos dados de entrada com Bean Validation
+- Bloqueio de nome duplicado, ignorando maiúsculas e minúsculas
 - Preço com `BigDecimal` (sem erro de arredondamento em dinheiro)
-- Dados salvos em SQLite: nada se perde ao fechar o programa
-- Código organizado em camadas: `model`, `repository`, `service` e `ui`
-- Testes automatizados do modelo e do service (20 testes)
+- Dados salvos em banco H2: nada se perde ao reiniciar
+- Tratamento de erros com códigos HTTP corretos (400, 404, 409)
+- Testes automatizados do modelo e dos endpoints (24 testes)
 
 ## Como executar
 
 Pré-requisitos: JDK 21 (`java -version`). O Maven vem pelo wrapper, não precisa instalar.
 
 ```powershell
-# Compila
-.\mvnw.cmd compile
-
-# Executa
-.\mvnw.cmd exec:java
+.\mvnw.cmd spring-boot:run
 ```
 
-Na primeira execução o wrapper baixa o Maven e o driver do SQLite (precisa de internet).
+A API sobe em `http://localhost:8080`.
 
-No VS Code, com a **Extension Pack for Java**, o projeto é reconhecido como Maven automaticamente.
+No VS Code, use `Ctrl+Shift+B` (tarefa **Executar AdegaSaaS**) ou `F5`. Para parar, `Ctrl+C` no terminal.
+
+Na primeira execução o Maven baixa as dependências do Spring Boot (precisa de internet).
+
+## Endpoints
+
+| Método | Caminho | O que faz | Sucesso |
+|---|---|---|---|
+| GET | `/api/bebidas` | Lista todas as bebidas | 200 |
+| GET | `/api/bebidas/{id}` | Busca uma bebida | 200 |
+| POST | `/api/bebidas` | Cadastra uma bebida | 201 |
+| PUT | `/api/bebidas/{id}` | Atualiza uma bebida | 200 |
+| DELETE | `/api/bebidas/{id}` | Remove uma bebida | 204 |
+| POST | `/api/bebidas/{id}/venda` | Vende uma quantidade | 200 |
+| POST | `/api/bebidas/{id}/reposicao` | Repõe o estoque | 200 |
+
+### Exemplos
+
+```powershell
+# Cadastrar
+Invoke-RestMethod -Uri http://localhost:8080/api/bebidas -Method Post -ContentType "application/json" -Body '{"nome":"Vinho Tinto","preco":25.90,"quantEstoque":10}'
+
+# Listar
+Invoke-RestMethod -Uri http://localhost:8080/api/bebidas
+
+# Vender 3 unidades
+Invoke-RestMethod -Uri http://localhost:8080/api/bebidas/1/venda -Method Post -ContentType "application/json" -Body '{"quantidade":3}'
+
+# Repor 5 unidades
+Invoke-RestMethod -Uri http://localhost:8080/api/bebidas/1/reposicao -Method Post -ContentType "application/json" -Body '{"quantidade":5}'
+```
+
+Corpo de uma bebida:
+
+```json
+{
+  "nome": "Vinho Tinto",
+  "preco": 25.90,
+  "quantEstoque": 10
+}
+```
+
+Resposta de erro:
+
+```json
+{
+  "status": 400,
+  "erro": "Dados inválidos",
+  "detalhes": [
+    "preco: O preço deve ser maior que zero."
+  ]
+}
+```
+
+## Console do banco
+
+Com a API rodando, abra `http://localhost:8080/h2-console`.
+
+- JDBC URL: `jdbc:h2:file:./adega`
+- Usuário: `sa`
+- Senha: vazia
 
 ## Testes
 
@@ -56,7 +115,7 @@ No VS Code, com a **Extension Pack for Java**, o projeto é reconhecido como Mav
 .\mvnw.cmd test
 ```
 
-Os testes do service usam um banco SQLite separado (`target/adega-test.db`), que é limpo antes de cada teste.
+Os testes usam um banco H2 em memória, então não tocam no banco real.
 
 ## Estrutura
 
@@ -66,44 +125,57 @@ AdegaSaaS/
 ├── mvnw / mvnw.cmd
 ├── .mvn/wrapper/maven-wrapper.properties
 ├── src/main/java/com/adega/
-│   ├── AdegaApplication.java        # Ponto de entrada
+│   ├── AdegaApplication.java        # Ponto de entrada do Spring Boot
+│   ├── api/
+│   │   ├── BebidaController.java    # Endpoints REST
+│   │   └── ApiExceptionHandler.java # Traduz exceções em respostas HTTP
+│   ├── dto/
+│   │   ├── BebidaRequest.java       # Corpo de entrada + validações
+│   │   ├── BebidaResponse.java      # Corpo de saída
+│   │   ├── VendaRequest.java
+│   │   ├── VendaResponse.java
+│   │   ├── ReposicaoRequest.java
+│   │   └── ErroResponse.java
+│   ├── exception/
+│   │   ├── RegraNegocioException.java
+│   │   ├── RecursoNaoEncontradoException.java
+│   │   └── ConflitoException.java
 │   ├── model/
-│   │   ├── Bebida.java              # Estado e regras de uma bebida
-│   │   └── Resultado.java           # Sucesso/falha + mensagem + valor
+│   │   └── Bebida.java              # Entidade JPA + regras de negócio
 │   ├── repository/
-│   │   ├── ConexaoBanco.java        # Conexão e criação da tabela
-│   │   └── BebidaRepository.java    # SQL (INSERT, SELECT, UPDATE)
-│   ├── service/
-│   │   └── BebidaService.java       # Orquestra repositório + regras
-│   └── ui/
-│       └── CadastroBebidas.java     # Menu de console
+│   │   └── BebidaRepository.java    # Spring Data JPA
+│   └── service/
+│       └── BebidaService.java       # Orquestra repositório + regras
+├── src/main/resources/application.properties
 ├── src/test/java/com/adega/
-│   ├── model/BebidaTest.java
-│   └── service/BebidaServiceTest.java
-└── adega.db                         # Banco (gerado, não versionado)
+│   ├── api/BebidaControllerTest.java
+│   └── model/BebidaTest.java
+└── adega.mv.db                      # Banco (gerado, não versionado)
 ```
 
 ## Camadas
 
 - `model`: o que é uma bebida e o que ela sabe fazer (vender, repor, calcular total).
-- `repository`: como os dados são gravados e lidos do banco.
-- `service`: junta as duas coisas — busca, valida duplicidade, decide quando salvar.
-- `ui`: conversa com o usuário. Não sabe SQL e não conhece o banco.
+- `repository`: acesso ao banco, sem SQL escrito à mão.
+- `service`: busca, valida duplicidade, decide quando salvar e controla a transação.
+- `api`: recebe HTTP, converte JSON em DTOs e devolve os códigos corretos.
 
 ## Banco de dados
 
-O arquivo `adega.db` é criado automaticamente na primeira execução, na raiz do projeto.
+O arquivo `adega.mv.db` é criado automaticamente na primeira execução, na raiz do projeto.
+
+A tabela é gerada pelo Hibernate a partir da entidade `Bebida`:
 
 ```sql
 CREATE TABLE bebidas (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT NOT NULL COLLATE NOCASE UNIQUE,
-    preco TEXT NOT NULL,
-    quant_estoque INTEGER NOT NULL CHECK (quant_estoque >= 0)
+    id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL UNIQUE,
+    preco NUMERIC(10, 2) NOT NULL,
+    quant_estoque INTEGER NOT NULL
 );
 ```
 
-Para começar do zero, apague `adega.db` e rode de novo.
+Para começar do zero, pare a API, apague `adega.mv.db` e rode de novo.
 
 ## Roadmap
 
@@ -114,7 +186,7 @@ Para começar do zero, apague `adega.db` e rode de novo.
 - [x] v1.2 — Persistência com SQLite + JDBC
 - [x] v1.3 — Maven e separação em camadas
 - [x] v1.4 — Testes automatizados com JUnit
-- [ ] v2.0 — API REST com Spring Boot
+- [x] v2.0 — API REST com Spring Boot
 - [ ] v2.1 — Login e senha com Spring Security + JWT
 - [ ] v2.2 — Front-end web com React
 

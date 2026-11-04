@@ -6,7 +6,7 @@
             "type": "shell",
             "command": "${workspaceFolder}\\mvnw.cmd",
             "args": [
-                "exec:java"
+                "spring-boot:run"
             ],
             "group": {
                 "kind": "build",

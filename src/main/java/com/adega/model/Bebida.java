@@ -1,29 +1,43 @@
 package com.adega.model;
 
+import com.adega.exception.RegraNegocioException;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
+@Entity
+@Table(name = "bebidas")
 public class Bebida {
 
-    private final int id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true, length = 100)
     private String nome;
+
+    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal preco;
+
+    @Column(name = "quant_estoque", nullable = false)
     private int quantEstoque;
 
-    public Bebida(int id, String nome, BigDecimal preco, int quantEstoque) {
+    protected Bebida() {
+    }
 
-        if (id < 0) {
-            throw new IllegalArgumentException("O id não pode ser negativo.");
-        }
-
-        this.id = id;
-
+    public Bebida(String nome, BigDecimal preco, int quantEstoque) {
         setNome(nome);
         setPreco(preco);
         setQuantEstoque(quantEstoque);
     }
 
-    public int getId() {
+    public Long getId() {
         return id;
     }
 
@@ -34,7 +48,7 @@ public class Bebida {
     public void setNome(String nome) {
 
         if (nome == null || nome.isBlank()) {
-            throw new IllegalArgumentException("O nome da bebida não pode ser vazio.");
+            throw new RegraNegocioException("O nome da bebida não pode ser vazio.");
         }
 
         this.nome = nome.trim();
@@ -47,7 +61,7 @@ public class Bebida {
     public void setPreco(BigDecimal preco) {
 
         if (preco == null || preco.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("O preço deve ser maior que zero.");
+            throw new RegraNegocioException("O preço deve ser maior que zero.");
         }
 
         this.preco = preco.setScale(2, RoundingMode.HALF_UP);
@@ -57,46 +71,37 @@ public class Bebida {
         return quantEstoque;
     }
 
-    private void setQuantEstoque(int quantEstoque) {
+    public void setQuantEstoque(int quantEstoque) {
 
         if (quantEstoque < 0) {
-            throw new IllegalArgumentException("O estoque não pode ser negativo.");
+            throw new RegraNegocioException("O estoque não pode ser negativo.");
         }
 
         this.quantEstoque = quantEstoque;
     }
 
-    public Resultado vender(int quantidade) {
+    public BigDecimal vender(int quantidade) {
 
         if (quantidade <= 0) {
-            return Resultado.falha("Quantidade inválida para venda.");
+            throw new RegraNegocioException("Quantidade inválida para venda.");
         }
 
         if (quantidade > quantEstoque) {
-            return Resultado.falha("Quantidade insuficiente em estoque. Disponível: " + quantEstoque);
+            throw new RegraNegocioException("Quantidade insuficiente em estoque. Disponível: " + quantEstoque);
         }
 
         quantEstoque -= quantidade;
 
-        if (quantEstoque == 0) {
-            return Resultado.ok(
-                    "Venda realizada com sucesso! Quantidade vendida: " + quantidade
-                            + ". A bebida " + nome + " está esgotada."
-            );
-        }
-
-        return Resultado.ok("Venda realizada com sucesso! Quantidade vendida: " + quantidade);
+        return preco.multiply(BigDecimal.valueOf(quantidade));
     }
 
-    public Resultado reporEstoque(int quantidade) {
+    public void reporEstoque(int quantidade) {
 
         if (quantidade <= 0) {
-            return Resultado.falha("Quantidade inválida para reposição.");
+            throw new RegraNegocioException("Quantidade inválida para reposição.");
         }
 
         quantEstoque += quantidade;
-
-        return Resultado.ok("Estoque reposto com sucesso! Quantidade adicionada: " + quantidade);
     }
 
     public BigDecimal valorEmEstoque() {
@@ -114,12 +119,12 @@ public class Bebida {
             return false;
         }
 
-        return id == outra.id;
+        return id != null && id.equals(outra.id);
     }
 
     @Override
     public int hashCode() {
-        return Integer.hashCode(id);
+        return getClass().hashCode();
     }
 
     @Override
