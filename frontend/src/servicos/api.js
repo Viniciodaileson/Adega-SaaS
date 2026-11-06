@@ -100,6 +100,10 @@ export async function cadastrarBebida(bebida) {
   return resposta.data
 }
 
+export async function excluirBebida(id) {
+  await api.delete(`/api/bebidas/${id}`)
+}
+
 export async function venderUnidade(id) {
   const resposta = await api.post(`/api/bebidas/${id}/venda`, { quantidade: 1 })
   return resposta.data

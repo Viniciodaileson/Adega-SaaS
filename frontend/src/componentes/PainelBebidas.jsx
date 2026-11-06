@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react"
 import {
   cadastrarBebida,
+  excluirBebida,
   listarBebidas,
   reporEstoque,
   venderUnidade
@@ -132,6 +133,25 @@ function PainelBebidas({ aoSair, saindo }) {
       )
 
       await carregar()
+    } catch (falha) {
+      definirErro(extrairMensagemErro(falha))
+    } finally {
+      definirAcaoEmAndamento(null)
+    }
+  }
+
+  async function excluir(bebida) {
+    if (!window.confirm(`Deseja excluir a bebida "${bebida.nome}"?`)) {
+      return
+    }
+
+    limparMensagens()
+    definirAcaoEmAndamento(`exclusao-${bebida.id}`)
+
+    try {
+      await excluirBebida(bebida.id)
+      definirBebidas((atuais) => atuais.filter((item) => item.id !== bebida.id))
+      definirAviso(`Bebida ${bebida.nome} excluída com sucesso.`)
     } catch (falha) {
       definirErro(extrairMensagemErro(falha))
     } finally {
@@ -293,6 +313,7 @@ function PainelBebidas({ aoSair, saindo }) {
                 {bebidas.map((bebida) => {
                   const vendendo = acaoEmAndamento === `venda-${bebida.id}`
                   const repondo = acaoEmAndamento === `reposicao-${bebida.id}`
+                  const excluindo = acaoEmAndamento === `exclusao-${bebida.id}`
                   const ocupado = Boolean(acaoEmAndamento)
 
                   return (
@@ -319,6 +340,14 @@ function PainelBebidas({ aoSair, saindo }) {
                             disabled={ocupado}
                           >
                             {repondo ? "Repondo..." : "Repor Estoque"}
+                          </button>
+                          <button
+                            className="botao-acao"
+                            type="button"
+                            onClick={() => excluir(bebida)}
+                            disabled={ocupado}
+                          >
+                            {excluindo ? "Excluindo..." : "Excluir"}
                           </button>
                         </div>
                       </td>
