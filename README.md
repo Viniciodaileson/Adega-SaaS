@@ -60,10 +60,23 @@ Pré-requisitos: JDK 21 (`java -version`) e Node.js 22 ou superior (`node -v`). 
 ### Backend
 
 ```powershell
-.\mvnw.cmd spring-boot:run
+.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-A API sobe em `http://localhost:8080`.
+A API sobe em `http://localhost:8080`. O perfil `dev` habilita o console do H2; sem ele o console fica desligado (padrão seguro).
+
+Em produção, não use o perfil `dev` e defina as variáveis de ambiente:
+
+| Variável | Para que serve |
+|---|---|
+| `ADEGA_DB_URL` | URL JDBC do banco |
+| `ADEGA_DB_USER` | Usuário do banco |
+| `ADEGA_DB_PASSWORD` | Senha do banco |
+| `ADEGA_DDL_AUTO` | Estratégia de schema (`update`, `validate` ou `none`) |
+| `ADEGA_JWT_CHAVE_JWK` | JWK privado ES256 em JSON (recomendado em produção) |
+| `ADEGA_JWT_ARQUIVO` | Arquivo local da chave (padrão `adega-jwt.jwk`) |
+| `ADEGA_CORS_ORIGENS` | Origens do front-end separadas por vírgula |
+| `ADEGA_ADMIN_SENHA` | Senha inicial do usuário `admin` |
 
 ### Front-end
 
@@ -83,7 +96,7 @@ No VS Code, use `Ctrl+Shift+B` (tarefa **Executar AdegaSaaS**) ou `F5`. Para o f
 
 Na primeira execução, o usuário `admin` é criado automaticamente.
 
-A senha pode ser definida antes de subir a aplicação:
+A senha pode ser definida antes de subir a aplicação (mínimo de 8 caracteres):
 
 ```properties
 adega.admin.senha=MinhaSenhaForte@2026
@@ -112,6 +125,8 @@ Se esquecer a senha, pare a API, apague `adega.mv.db` e suba de novo.
 ## Front-end
 
 O front-end fica na pasta `frontend/` e conversa com a API em `http://localhost:8080`.
+
+Para apontar para outra API, copie `frontend/.env.example` para `frontend/.env.local` e ajuste `VITE_API_URL`. Variáveis `.env.local` não são versionadas.
 
 ### Estrutura
 
@@ -211,7 +226,16 @@ Invoke-RestMethod -Uri http://localhost:8080/.well-known/jwks.json
 
 ## Segurança
 
-- **Assinatura ES256**: par de chaves EC gerado na curva `secp256r1`. A chave privada nunca sai da aplicação; a pública fica disponível no JWKS.
+- **Assinatura ES256**: par de chaves EC na curva `secp256r1`. A chave privada fica em `adega-jwt.jwk` (ignorado pelo Git) e é reutilizada nos reinícios; em produção pode ser injetada por `ADEGA_JWT_CHAVE_JWK`. A chave pública fica disponível no JWKS.
+- **Console do H2 desligado por padrão**: só é habilitado no perfil `dev`, e a rota `/h2-console/**` só é liberada quando o console está ativo. Em produção, o console nunca deve ser exposto.
+- **Credenciais do banco por ambiente**: URL, usuário e senha vêm de variáveis de ambiente; a senha vazia do H2 é apenas um padrão local.
+- **Token de usuário inativo**: o filtro JWT confere no banco se o usuário ainda existe e está ativo antes de autenticar a requisição.
+- **Respostas de autenticação sem cache**: login, refresh e logout enviam `Cache-Control: no-store` e `Pragma: no-cache`.
+- **Limite de tamanho**: tokens de acesso acima de 4 KB são ignorados e o refresh token tem limite de 200 caracteres.
+- **Cabeçalhos**: `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `frame-ancestors` restrito e HSTS (em HTTPS).
+- **Dependências atualizadas**: Nimbus JOSE + JWT 10.10 e BouncyCastle 1.86.
+- **Erros sem vazamento**: detalhes técnicos de erro inesperado vão para o log, não para o cliente.
+- **Rotina de limpeza**: refresh tokens expirados e revogados há mais de 30 dias são removidos diariamente.
 - **Senhas com Argon2id**: salt de 16 bytes, hash de 32 bytes, paralelismo 1, memória de 64 MB e 3 iterações.
 - **Refresh token opaco**: 32 bytes aleatórios com `SecureRandom`, enviados em Base64 URL-safe. O banco guarda apenas o hash SHA-256.
 - **Rotação de refresh token**: cada uso gera um novo token e revoga o anterior. A coluna `substituido_por` mantém a corrente.
@@ -219,13 +243,12 @@ Invoke-RestMethod -Uri http://localhost:8080/.well-known/jwks.json
 - **Bloqueio contra corrida**: a leitura do refresh token usa `PESSIMISTIC_WRITE`.
 - **Tempo de vida**: access token de 15 minutos e refresh token de 7 dias.
 - **Sessão stateless**: sem cookie de sessão e sem CSRF.
-- **Cabeçalhos**: `X-Content-Type-Options: nosniff`, HSTS (em HTTPS) e frame restrito.
-- **Auditoria imutável**: a entidade é anotada com `@Immutable` e o repositório expõe apenas `save`.
+- **Auditoria somente inserção na aplicação**: a entidade é anotada com `@Immutable` e o repositório expõe apenas `save`. Isso não substitui permissões de banco que impeçam `UPDATE`/`DELETE` diretos.
 - **Auditoria assíncrona**: o filtro publica um evento e um listener com `@Async` grava em segundo plano.
 - **Resposta genérica no login**: login inexistente e senha errada devolvem a mesma mensagem, com verificação de hash fictício para reduzir diferença de tempo.
 - **Limite por IP**: 5 tentativas de login inválidas em 15 minutos bloqueiam o IP por 15 minutos, com resposta `429 Too Many Requests`.
 - **Logout com revogação**: o refresh token apresentado é localizado e todos os tokens do usuário são revogados.
-- **CORS restrito**: apenas `http://localhost:5173` e `http://127.0.0.1:5173`, com métodos e cabeçalhos explícitos e sem credenciais.
+- **CORS restrito**: por padrão, apenas `http://localhost:5173` e `http://127.0.0.1:5173`, configurável por `ADEGA_CORS_ORIGENS`, com métodos e cabeçalhos explícitos e sem credenciais.
 - **Tokens no front-end apenas em memória**: sem persistência local, reduzindo o impacto de XSS sobre tokens armazenados.
 
 ## Testes
@@ -234,7 +257,7 @@ Invoke-RestMethod -Uri http://localhost:8080/.well-known/jwks.json
 .\mvnw.cmd test
 ```
 
-São 38 testes: 11 do modelo, 13 dos endpoints de bebidas e 14 de autenticação e segurança. Os testes usam H2 em memória.
+São 39 testes: 11 do modelo, 13 dos endpoints de bebidas e 15 de autenticação e segurança. Os testes usam H2 em memória.
 
 ## Estrutura
 
@@ -303,6 +326,7 @@ AdegaSaaS/
 │           ├── Usuario.java
 │           └── UsuarioRepository.java
 ├── src/main/resources/application.properties
+├── src/main/resources/application-dev.properties
 ├── src/test/java/com/adega/
 │   ├── api/BebidaControllerTest.java
 │   ├── model/BebidaTest.java
@@ -321,13 +345,17 @@ Tabelas geradas pelo Hibernate:
 - `refresh_tokens`
 - `logs_auditoria`
 
-O console do H2 fica em `http://localhost:8080/h2-console`:
+O console do H2 fica em `http://localhost:8080/h2-console` **apenas no perfil `dev`**:
+
+```powershell
+.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=dev
+```
 
 - JDBC URL: `jdbc:h2:file:./adega`
 - Usuário: `sa`
 - Senha: vazia
 
-O console é útil apenas em desenvolvimento. Em produção, desligue com `spring.h2.console.enabled=false`.
+O console dá acesso total ao banco, portanto fica desligado por padrão (`spring.h2.console.enabled=false`) e nunca deve ser habilitado em produção. Se precisar habilitar manualmente para depurar, use `--spring.profiles.active=dev` apenas na sua máquina.
 
 ## Roadmap
 
@@ -345,12 +373,15 @@ O console é útil apenas em desenvolvimento. Em produção, desligue com `sprin
 
 ## Próximos passos de segurança
 
-- Persistir a chave privada em cofre ou KMS (hoje ela fica em memória e muda a cada reinício)
-- Servir a API somente por HTTPS
-- Criar rotina de limpeza de refresh tokens expirados
+- Guardar a chave privada em cofre/KMS em produção (hoje o padrão é o arquivo local `adega-jwt.jwk`; `ADEGA_JWT_CHAVE_JWK` permite injetá-la por ambiente)
+- Servir a API somente por HTTPS e configurar HSTS definitivo
+- Adicionar limite de tentativas por conta (além do limite por IP), para conter ataques distribuídos
 - Migrar o limite de tentativas para um armazenamento distribuído (Redis) em cenário com múltiplas instâncias
-- Adicionar verificação de e-mail e política de troca de senha
-- Avaliar autenticação em dois fatores (TOTP)
+- Tratar `X-Forwarded-For` apenas quando houver proxy reverso confiável (`server.forward-headers-strategy=framework`)
+- Trocar `ddl-auto=update` por migrations versionadas (Flyway ou Liquibase)
+- Adicionar verificação de e-mail, política de troca de senha e TOTP
+- Restringir CORS e a origem do front-end por ambiente
+- Adicionar Content-Security-Policy no front-end em produção
 
 ---
 

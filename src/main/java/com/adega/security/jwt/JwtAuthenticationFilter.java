@@ -1,5 +1,6 @@
 package com.adega.security.jwt;
 
+import com.adega.security.user.UsuarioRepository;
 import com.nimbusds.jwt.JWTClaimsSet;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -18,11 +19,14 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String PREFIXO = "Bearer ";
+    private static final int TAMANHO_MAXIMO_TOKEN = 4096;
 
     private final JwtService servico;
+    private final UsuarioRepository usuarios;
 
-    public JwtAuthenticationFilter(JwtService servico) {
+    public JwtAuthenticationFilter(JwtService servico, UsuarioRepository usuarios) {
         this.servico = servico;
+        this.usuarios = usuarios;
     }
 
     @Override
@@ -34,21 +38,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (cabecalho != null && cabecalho.startsWith(PREFIXO)) {
 
-            try {
-                String token = cabecalho.substring(PREFIXO.length()).trim();
-                JWTClaimsSet declaracoes = servico.validarAccessToken(token);
+            String token = cabecalho.substring(PREFIXO.length()).trim();
 
-                UsernamePasswordAuthenticationToken autenticacao = new UsernamePasswordAuthenticationToken(
-                        declaracoes.getSubject(),
-                        null,
-                        List.of(new SimpleGrantedAuthority("ROLE_USUARIO"))
-                );
+            if (!token.isEmpty() && token.length() <= TAMANHO_MAXIMO_TOKEN) {
 
-                autenticacao.setDetails(declaracoes.getStringClaim("login"));
-                SecurityContextHolder.getContext().setAuthentication(autenticacao);
+                try {
+                    JWTClaimsSet declaracoes = servico.validarAccessToken(token);
 
-            } catch (RuntimeException | ParseException excecao) {
-                SecurityContextHolder.clearContext();
+                    Long usuarioId = Long.valueOf(declaracoes.getSubject());
+
+                    // Um token válido de um usuário removido ou inativado deixa de ser aceito.
+                    if (usuarios.existsByIdAndAtivoTrue(usuarioId)) {
+
+                        UsernamePasswordAuthenticationToken autenticacao =
+                                new UsernamePasswordAuthenticationToken(
+                                        declaracoes.getSubject(),
+                                        null,
+                                        List.of(new SimpleGrantedAuthority("ROLE_USUARIO"))
+                                );
+
+                        autenticacao.setDetails(declaracoes.getStringClaim("login"));
+                        SecurityContextHolder.getContext().setAuthentication(autenticacao);
+                    } else {
+                        SecurityContextHolder.clearContext();
+                    }
+
+                } catch (RuntimeException | ParseException excecao) {
+                    SecurityContextHolder.clearContext();
+                }
             }
         }
 

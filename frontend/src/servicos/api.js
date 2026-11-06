@@ -6,7 +6,9 @@ import {
   obterRefreshToken
 } from "./tokens"
 
-const ENDERECO_API = "http://localhost:8080"
+const ENDERECO_API = (
+  import.meta.env.VITE_API_URL || "http://localhost:8080"
+).replace(/\/+$/, "")
 
 const api = axios.create({
   baseURL: ENDERECO_API,
@@ -49,7 +51,11 @@ api.interceptors.response.use(
     try {
       if (!renovacaoEmAndamento) {
         renovacaoEmAndamento = axios
-          .post(`${ENDERECO_API}/api/auth/refresh`, { refreshToken: tokenRenovacao })
+          .post(
+            `${ENDERECO_API}/api/auth/refresh`,
+            { refreshToken: tokenRenovacao },
+            { timeout: 15000 }
+          )
           .then((resposta) => {
             definirTokens(resposta.data)
             return resposta.data.accessToken

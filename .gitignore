@@ -29,6 +29,15 @@ Thumbs.db
 *.mv.db
 *.trace.db
 
+# Chaves e segredos locais
+*.jwk
+*.pem
+*.p12
+*.jks
+.env
+.env.local
+.env.*.local
+
 # Front-end
 node_modules/
 dist/

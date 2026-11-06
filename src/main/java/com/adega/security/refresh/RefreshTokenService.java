@@ -3,6 +3,9 @@ package com.adega.security.refresh;
 import com.adega.security.exception.ReutilizacaoTokenException;
 import com.adega.security.exception.TokenInvalidoException;
 import com.adega.security.jwt.JwtProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +22,7 @@ import java.util.HexFormat;
 @Service
 public class RefreshTokenService {
 
+    private static final Logger REGISTRO = LoggerFactory.getLogger(RefreshTokenService.class);
     private static final SecureRandom GERADOR = new SecureRandom();
     private static final Base64.Encoder CODIFICADOR = Base64.getUrlEncoder().withoutPadding();
 
@@ -93,6 +97,22 @@ public class RefreshTokenService {
 
         repositorio.findByHashToken(gerarHash(tokenRecebido))
                 .ifPresent(registro -> repositorio.revogarTodosDoUsuario(registro.getUsuarioId()));
+    }
+
+    /**
+     * Remove tokens expirados e tokens revogados há mais de 30 dias,
+     * evitando crescimento indefinido da tabela.
+     */
+    @Scheduled(cron = "${adega.refresh.limpeza-cron:0 0 3 * * *}")
+    @Transactional
+    public void limparTokensExpirados() {
+
+        Instant agora = Instant.now();
+        int removidos = repositorio.limparTokensAntigos(agora, agora.minus(Duration.ofDays(30)));
+
+        if (removidos > 0) {
+            REGISTRO.info("Rotina de limpeza removeu {} refresh tokens antigos.", removidos);
+        }
     }
 
     private String gerarToken() {

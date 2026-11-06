@@ -6,7 +6,8 @@
             "name": "AdegaSaaS",
             "request": "launch",
             "mainClass": "com.adega.AdegaApplication",
-            "projectName": "adega-saas"
+            "projectName": "adega-saas",
+            "args": "--spring.profiles.active=dev"
         }
     ]
 }

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,4 +24,12 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update RefreshToken token set token.revogado = true where token.usuarioId = :usuarioId and token.revogado = false")
     int revogarTodosDoUsuario(@Param("usuarioId") Long usuarioId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            delete from RefreshToken token
+            where token.expiraEm < :agora
+               or (token.revogado = true and token.criadoEm < :limite)
+            """)
+    int limparTokensAntigos(@Param("agora") Instant agora, @Param("limite") Instant limite);
 }

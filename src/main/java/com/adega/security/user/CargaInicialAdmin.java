@@ -39,6 +39,18 @@ public class CargaInicialAdmin implements CommandLineRunner {
         boolean senhaGerada = senhaConfigurada == null || senhaConfigurada.isBlank();
         String senha = senhaGerada ? gerarSenhaForte() : senhaConfigurada;
 
+        if (!senhaGerada) {
+            if (senha.length() < 8) {
+                throw new IllegalStateException(
+                        "A senha em adega.admin.senha deve ter pelo menos 8 caracteres.");
+            }
+
+            if (senha.length() > 200) {
+                throw new IllegalStateException(
+                        "A senha em adega.admin.senha deve ter no máximo 200 caracteres.");
+            }
+        }
+
         repositorio.save(new Usuario(LOGIN_ADMIN, codificador.encode(senha)));
 
         REGISTRO.info("Usuário administrador criado com login \"{}\".", LOGIN_ADMIN);

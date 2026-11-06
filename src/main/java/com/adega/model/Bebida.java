@@ -15,6 +15,9 @@ import java.math.RoundingMode;
 @Table(name = "bebidas")
 public class Bebida {
 
+    private static final int TAMANHO_MAXIMO_NOME = 100;
+    private static final int ESTOQUE_MAXIMO = 1_000_000_000;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -51,7 +54,14 @@ public class Bebida {
             throw new RegraNegocioException("O nome da bebida não pode ser vazio.");
         }
 
-        this.nome = nome.trim();
+        String normalizado = nome.trim();
+
+        if (normalizado.length() > TAMANHO_MAXIMO_NOME) {
+            throw new RegraNegocioException(
+                    "O nome da bebida deve ter no máximo " + TAMANHO_MAXIMO_NOME + " caracteres.");
+        }
+
+        this.nome = normalizado;
     }
 
     public BigDecimal getPreco() {
@@ -75,6 +85,11 @@ public class Bebida {
 
         if (quantEstoque < 0) {
             throw new RegraNegocioException("O estoque não pode ser negativo.");
+        }
+
+        if (quantEstoque > ESTOQUE_MAXIMO) {
+            throw new RegraNegocioException(
+                    "O estoque deve ser no máximo " + ESTOQUE_MAXIMO + " unidades.");
         }
 
         this.quantEstoque = quantEstoque;
@@ -101,7 +116,14 @@ public class Bebida {
             throw new RegraNegocioException("Quantidade inválida para reposição.");
         }
 
-        quantEstoque += quantidade;
+        long novoEstoque = (long) quantEstoque + quantidade;
+
+        if (novoEstoque > ESTOQUE_MAXIMO) {
+            throw new RegraNegocioException(
+                    "A reposição ultrapassa o limite de " + ESTOQUE_MAXIMO + " unidades em estoque.");
+        }
+
+        quantEstoque = (int) novoEstoque;
     }
 
     public BigDecimal valorEmEstoque() {

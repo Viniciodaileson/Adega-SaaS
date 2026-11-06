@@ -2,6 +2,7 @@ package com.adega.dto;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -22,6 +23,7 @@ public record BebidaRequest(
 
         @NotNull(message = "A quantidade em estoque é obrigatória.")
         @Min(value = 0, message = "O estoque não pode ser negativo.")
+        @Max(value = 1_000_000_000, message = "O estoque deve ser no máximo 1.000.000.000 de unidades.")
         Integer quantEstoque
 ) {
 }

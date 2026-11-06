@@ -21,6 +21,8 @@ import java.util.UUID;
 @Service
 public class JwtService {
 
+    private static final Duration TOLERANCIA_RELOGIO = Duration.ofSeconds(30);
+
     private final JwtProperties propriedades;
     private final JwtKeyProvider provedorChaves;
 
@@ -81,7 +83,8 @@ public class JwtService {
 
             Date expiracao = declaracoes.getExpirationTime();
 
-            if (expiracao == null || expiracao.before(new Date())) {
+            if (expiracao == null
+                    || expiracao.toInstant().isBefore(Instant.now().minus(TOLERANCIA_RELOGIO))) {
                 throw new TokenInvalidoException("Token expirado.");
             }
 

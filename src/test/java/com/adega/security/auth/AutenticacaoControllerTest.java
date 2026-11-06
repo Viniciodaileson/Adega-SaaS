@@ -141,6 +141,20 @@ class AutenticacaoControllerTest {
     }
 
     @Test
+    void tokenDeUsuarioInativadoDeixaDeSerAceito() throws Exception {
+
+        String token = corpo(efetuarLogin("teste", "Senha@123")).get("accessToken").asText();
+
+        Usuario usuario = usuarios.findByLogin("teste").orElseThrow();
+        usuario.setAtivo(false);
+        usuarios.save(usuario);
+
+        mockMvc.perform(get("/api/bebidas")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void jwksExpoeSomenteChavePublica() throws Exception {
 
         mockMvc.perform(get("/.well-known/jwks.json"))
